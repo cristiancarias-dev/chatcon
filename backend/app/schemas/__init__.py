@@ -1,3 +1,4 @@
+from app.schemas.auth import LoginRequest
 from app.schemas.user import Token, UserCreate, UserRead, UserUpdate, UserWithRoles
 from app.schemas.role import (
     PermissionRead,
@@ -9,6 +10,7 @@ from app.schemas.role import (
 )
 
 __all__ = [
+    "LoginRequest",
     "Token",
     "UserCreate",
     "UserRead",

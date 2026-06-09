@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getMe } from "../api/client";
+import { request } from "../shared/http";
+import Loading from "../shared/Loading";
+import ErrorAlert from "../shared/ErrorAlert";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -13,7 +15,7 @@ export default function Dashboard() {
       navigate("/login");
       return;
     }
-    getMe()
+    request("/users/me")
       .then(setUser)
       .catch((err) => setError(err.message));
   }, [navigate]);
@@ -26,27 +28,15 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="rounded-lg bg-red-50 px-6 py-4 text-sm text-red-600">
-          {error}
-        </div>
+        <ErrorAlert message={error} />
       </div>
     );
   }
 
-  if (!user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
-      </div>
-    );
-  }
+  if (!user) return <Loading />;
 
-  const hasAdminAccess =
-    user.is_superuser ||
-    user.roles?.some((r) => r.name === "admin") ||
-    user.roles?.some((r) =>
-      r.permissions?.some((p) => p.codename?.startsWith("read_"))
-    );
+  const canAccessAdmin =
+    user.is_superuser || user.roles?.some((r) => r.name === "admin");
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -93,35 +83,25 @@ export default function Dashboard() {
               <p className="mt-1 text-green-600">Active</p>
             </div>
           </div>
-          {hasAdminAccess && (
+          {canAccessAdmin && (
             <>
               <hr className="my-6 border-gray-200" />
               <div>
-                <h3 className="mb-4 text-lg font-semibold text-gray-900">
-                  Administration
-                </h3>
+                <h3 className="mb-4 text-lg font-semibold text-gray-900">Administration</h3>
                 <div className="flex gap-4">
                   <Link
-                    to="/admin/users"
+                    to="/users"
                     className="flex-1 rounded-lg border border-gray-200 p-4 text-center hover:bg-gray-50"
                   >
-                    <p className="text-sm font-medium text-indigo-600">
-                      Manage Users
-                    </p>
-                    <p className="mt-1 text-xs text-gray-400">
-                      Create, edit, delete users
-                    </p>
+                    <p className="text-sm font-medium text-indigo-600">Manage Users</p>
+                    <p className="mt-1 text-xs text-gray-400">Create, edit, delete users</p>
                   </Link>
                   <Link
-                    to="/admin/roles"
+                    to="/roles"
                     className="flex-1 rounded-lg border border-gray-200 p-4 text-center hover:bg-gray-50"
                   >
-                    <p className="text-sm font-medium text-indigo-600">
-                      Manage Roles
-                    </p>
-                    <p className="mt-1 text-xs text-gray-400">
-                      Configure roles and permissions
-                    </p>
+                    <p className="text-sm font-medium text-indigo-600">Manage Roles</p>
+                    <p className="mt-1 text-xs text-gray-400">Configure roles and permissions</p>
                   </Link>
                 </div>
               </div>

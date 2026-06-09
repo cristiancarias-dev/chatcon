@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { register as apiRegister } from "../api/client";
+import { request } from "../shared/http";
+import ErrorAlert from "../shared/ErrorAlert";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -15,7 +16,10 @@ export default function Register() {
     setError("");
     setLoading(true);
     try {
-      await apiRegister(email, password, name);
+      await request("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ email, password, name }),
+      });
       navigate("/login");
     } catch (err) {
       setError(err.message);
@@ -34,9 +38,7 @@ export default function Register() {
         <div className="rounded-xl bg-white p-8 shadow-sm ring-1 ring-gray-200">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Name
-              </label>
+              <label className="block text-sm font-medium text-gray-700">Name</label>
               <input
                 type="text"
                 value={name}
@@ -47,9 +49,7 @@ export default function Register() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Email
-              </label>
+              <label className="block text-sm font-medium text-gray-700">Email</label>
               <input
                 type="email"
                 value={email}
@@ -60,9 +60,7 @@ export default function Register() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
+              <label className="block text-sm font-medium text-gray-700">Password</label>
               <input
                 type="password"
                 value={password}
@@ -73,11 +71,7 @@ export default function Register() {
                 placeholder="At least 6 characters"
               />
             </div>
-            {error && (
-              <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
-                {error}
-              </div>
-            )}
+            <ErrorAlert message={error} />
             <button
               type="submit"
               disabled={loading}
@@ -89,10 +83,7 @@ export default function Register() {
         </div>
         <p className="mt-6 text-center text-sm text-gray-500">
           Already have an account?{" "}
-          <Link
-            to="/login"
-            className="font-medium text-indigo-600 hover:text-indigo-500"
-          >
+          <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
             Sign in
           </Link>
         </p>

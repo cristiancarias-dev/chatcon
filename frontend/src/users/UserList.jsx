@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getUsers, deleteUser } from "../../api/client";
+import { getUsers, deleteUser } from "./useUsers";
+import Loading from "../shared/Loading";
+import ErrorAlert from "../shared/ErrorAlert";
 
 export default function UserList() {
   const navigate = useNavigate();
@@ -37,29 +39,20 @@ export default function UserList() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
-      </div>
-    );
-  }
+  if (loading) return <Loading />;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="border-b border-gray-200 bg-white shadow-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-4">
-            <Link
-              to="/dashboard"
-              className="text-sm text-gray-500 hover:text-gray-700"
-            >
+            <Link to="/dashboard" className="text-sm text-gray-500 hover:text-gray-700">
               &larr; Dashboard
             </Link>
             <h1 className="text-xl font-bold text-gray-900">Users</h1>
           </div>
           <Link
-            to="/admin/users/new"
+            to="/users/new"
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
           >
             New User
@@ -67,11 +60,7 @@ export default function UserList() {
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-8">
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
-            {error}
-          </div>
-        )}
+        <ErrorAlert message={error} />
         <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-gray-200 bg-gray-50 text-xs uppercase text-gray-500">
@@ -89,18 +78,10 @@ export default function UserList() {
               {users.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-gray-500">{user.id}</td>
-                  <td className="px-6 py-4 font-medium text-gray-900">
-                    {user.name}
-                  </td>
+                  <td className="px-6 py-4 font-medium text-gray-900">{user.name}</td>
                   <td className="px-6 py-4 text-gray-500">{user.email}</td>
                   <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                        user.is_active
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
+                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${user.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
                       {user.is_active ? "Active" : "Inactive"}
                     </span>
                   </td>
@@ -108,37 +89,16 @@ export default function UserList() {
                     {user.roles?.map((r) => r.name).join(", ") || "—"}
                   </td>
                   <td className="px-6 py-4">
-                    {user.is_superuser ? (
-                      <span className="text-yellow-600">&#9733;</span>
-                    ) : (
-                      <span className="text-gray-300">&#9733;</span>
-                    )}
+                    <span className={user.is_superuser ? "text-yellow-600" : "text-gray-300"}>&#9733;</span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <Link
-                      to={`/admin/users/${user.id}/edit`}
-                      className="text-indigo-600 hover:text-indigo-800"
-                    >
-                      Edit
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(user.id)}
-                      className="ml-3 text-red-600 hover:text-red-800"
-                    >
-                      Delete
-                    </button>
+                    <Link to={`/users/${user.id}/edit`} className="text-indigo-600 hover:text-indigo-800">Edit</Link>
+                    <button onClick={() => handleDelete(user.id)} className="ml-3 text-red-600 hover:text-red-800">Delete</button>
                   </td>
                 </tr>
               ))}
               {users.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="px-6 py-12 text-center text-gray-400"
-                  >
-                    No users found
-                  </td>
-                </tr>
+                <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-400">No users found</td></tr>
               )}
             </tbody>
           </table>

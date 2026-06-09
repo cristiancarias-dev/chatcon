@@ -31,7 +31,7 @@ def test_login_invalid_password(client, user_data):
     client.post("/auth/register", json=user_data)
     response = client.post(
         "/auth/login",
-        json={"email": user_data["email"], "password": "wrongpass", "name": ""},
+        json={"email": user_data["email"], "password": "wrongpass"},
     )
     assert response.status_code == 401
 
@@ -39,7 +39,7 @@ def test_login_invalid_password(client, user_data):
 def test_login_invalid_email(client):
     response = client.post(
         "/auth/login",
-        json={"email": "noexist@test.com", "password": "pass123", "name": ""},
+        json={"email": "noexist@test.com", "password": "pass123"},
     )
     assert response.status_code == 401
 

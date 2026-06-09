@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { register, getRoles } from "../../api/client";
+import { request } from "../shared/http";
+import ErrorAlert from "../shared/ErrorAlert";
 
 export default function UserCreate() {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ export default function UserCreate() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return navigate("/login");
-    getRoles()
+    request("/roles/")
       .then(setAllRoles)
       .catch(() => {});
   }, [navigate]);
@@ -29,8 +30,17 @@ export default function UserCreate() {
     setError("");
     setSaving(true);
     try {
-      await register(form.email, form.password, form.name);
-      navigate("/admin/users");
+      const user = await request("/auth/register", {
+        method: "POST",
+        body: JSON.stringify(form),
+      });
+      if (selectedRoleIds.length > 0) {
+        await request(`/users/${user.id}/roles`, {
+          method: "PUT",
+          body: JSON.stringify(selectedRoleIds),
+        });
+      }
+      navigate("/users");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -43,17 +53,13 @@ export default function UserCreate() {
       <header className="border-b border-gray-200 bg-white shadow-sm">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-4">
-            <Link to="/admin/users" className="text-sm text-gray-500 hover:text-gray-700">
-              &larr; Users
-            </Link>
+            <Link to="/users" className="text-sm text-gray-500 hover:text-gray-700">&larr; Users</Link>
             <h1 className="text-xl font-bold text-gray-900">New User</h1>
           </div>
         </div>
       </header>
       <main className="mx-auto max-w-2xl px-4 py-8">
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
-        )}
+        <ErrorAlert message={error} />
         <form onSubmit={handleSubmit} className="space-y-6 rounded-xl bg-white p-8 shadow-sm ring-1 ring-gray-200">
           <div>
             <label className="block text-sm font-medium text-gray-700">Name</label>
@@ -88,10 +94,7 @@ export default function UserCreate() {
               className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50">
               {saving ? "Creating..." : "Create User"}
             </button>
-            <Link to="/admin/users"
-              className="rounded-lg bg-gray-100 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200">
-              Cancel
-            </Link>
+            <Link to="/users" className="rounded-lg bg-gray-100 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200">Cancel</Link>
           </div>
         </form>
       </main>

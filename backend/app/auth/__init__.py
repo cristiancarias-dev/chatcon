@@ -8,8 +8,10 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
+from app.exceptions import UnauthorizedException, ForbiddenException
 from app.models.user import User
 from app.models.role import Permission
+from app.repositories.user_repository import UserRepository
 from app.schemas.user import TokenData
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -51,17 +53,11 @@ def get_current_user(
 ) -> User:
     token_data = verify_token(token)
     if token_data is None or token_data.email is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    user = db.query(User).filter(User.email == token_data.email).first()
+        raise UnauthorizedException("Invalid or expired token")
+    repo = UserRepository(db)
+    user = repo.get_by_email(token_data.email)
     if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-        )
+        raise UnauthorizedException("User not found")
     return user
 
 
@@ -77,16 +73,9 @@ def require_permission(codename: str):
             .first()
         )
         if perm is None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Permission not found",
-            )
+            raise ForbiddenException("Permission not found")
         for role in user.roles:
             if perm in role.permissions:
                 return user
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
-        )
-
+        raise ForbiddenException("Not enough permissions")
     return checker

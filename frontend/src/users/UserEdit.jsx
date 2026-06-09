@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getUser, updateUser, updateUserRoles, getRoles } from "../../api/client";
+import { getUser, updateUser, updateUserRoles } from "./useUsers";
+import { request } from "../shared/http";
+import Loading from "../shared/Loading";
+import ErrorAlert from "../shared/ErrorAlert";
 
 export default function UserEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
-
   const [form, setForm] = useState({ name: "", email: "", is_active: true, is_superuser: false, password: "" });
   const [allRoles, setAllRoles] = useState([]);
   const [selectedRoleIds, setSelectedRoleIds] = useState([]);
@@ -18,7 +20,7 @@ export default function UserEdit() {
     if (!token) return navigate("/login");
     async function load() {
       try {
-        const [user, roles] = await Promise.all([getUser(id), getRoles()]);
+        const [user, roles] = await Promise.all([getUser(id), request("/roles/")]);
         setForm({ name: user.name, email: user.email, is_active: user.is_active, is_superuser: user.is_superuser, password: "" });
         setAllRoles(roles);
         setSelectedRoleIds(user.roles?.map((r) => r.id) || []);
@@ -46,7 +48,7 @@ export default function UserEdit() {
       if (!body.password) delete body.password;
       await updateUser(id, body);
       await updateUserRoles(id, selectedRoleIds);
-      navigate("/admin/users");
+      navigate("/users");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -54,32 +56,20 @@ export default function UserEdit() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
-      </div>
-    );
-  }
+  if (loading) return <Loading />;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="border-b border-gray-200 bg-white shadow-sm">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-4">
-            <Link to="/admin/users" className="text-sm text-gray-500 hover:text-gray-700">
-              &larr; Users
-            </Link>
+            <Link to="/users" className="text-sm text-gray-500 hover:text-gray-700">&larr; Users</Link>
             <h1 className="text-xl font-bold text-gray-900">Edit User</h1>
           </div>
         </div>
       </header>
       <main className="mx-auto max-w-2xl px-4 py-8">
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
-            {error}
-          </div>
-        )}
+        <ErrorAlert message={error} />
         <form onSubmit={handleSubmit} className="space-y-6 rounded-xl bg-white p-8 shadow-sm ring-1 ring-gray-200">
           <div>
             <label className="block text-sm font-medium text-gray-700">Name</label>
@@ -126,10 +116,7 @@ export default function UserEdit() {
               className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50">
               {saving ? "Saving..." : "Save"}
             </button>
-            <Link to="/admin/users"
-              className="rounded-lg bg-gray-100 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200">
-              Cancel
-            </Link>
+            <Link to="/users" className="rounded-lg bg-gray-100 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200">Cancel</Link>
           </div>
         </form>
       </main>
