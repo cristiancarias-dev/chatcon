@@ -14,6 +14,18 @@ const navItems = [
     ),
   },
   {
+    label: "Contacts",
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
+      </svg>
+    ),
+    children: [
+      { label: "List", path: "/contacts" },
+      { label: "New", path: "/contacts/new" },
+    ],
+  },
+  {
     label: "Users",
     path: "/users",
     icon: (
@@ -41,6 +53,13 @@ export default function Layout({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState(["Contacts"]);
+
+  function toggleMenu(label) {
+    setExpandedMenus((prev) =>
+      prev.includes(label) ? prev.filter((m) => m !== label) : [...prev, label]
+    );
+  }
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -95,6 +114,59 @@ export default function Layout({ children }) {
         <nav className="flex-1 space-y-1 px-3 py-4">
           {navItems.map((item) => {
             if (item.admin && !canAccessAdmin) return null;
+
+            if (item.children) {
+              const isOpen = expandedMenus.includes(item.label);
+              const isChildActive = item.children.some((c) =>
+                location.pathname.startsWith(c.path)
+              );
+              return (
+                <div key={item.label}>
+                  <button
+                    onClick={() => toggleMenu(item.label)}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                      isChildActive
+                        ? "bg-primary-50 text-primary-700"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    }`}
+                  >
+                    {item.icon}
+                    <span className="flex-1 text-left">{item.label}</span>
+                    <svg
+                      className={`h-4 w-4 transition-transform ${isOpen ? "rotate-90" : ""}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                  </button>
+                  {isOpen && (
+                    <div className="ml-4 mt-1 space-y-1 border-l border-gray-200 pl-3">
+                      {item.children.map((child) => {
+                        const isActive = location.pathname === child.path;
+                        return (
+                          <Link
+                            key={child.path}
+                            to={child.path}
+                            onClick={() => setSidebarOpen(false)}
+                            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                              isActive
+                                ? "bg-primary-50 text-primary-700"
+                                : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                            }`}
+                          >
+                            {child.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             const isActive = location.pathname.startsWith(item.path);
             return (
               <Link

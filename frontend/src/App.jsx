@@ -9,6 +9,9 @@ import UserEdit from "./users/UserEdit";
 import RoleList from "./roles/RoleList";
 import RoleCreate from "./roles/RoleCreate";
 import RoleEdit from "./roles/RoleEdit";
+import ContactList from "./contacts/ContactList";
+import ContactCreate from "./contacts/ContactCreate";
+import ContactEdit from "./contacts/ContactEdit";
 import Layout from "./shared/Layout";
 
 function ProtectedLayout({ children }) {
@@ -26,6 +29,30 @@ export default function App() {
         element={
           <ProtectedLayout>
             <Dashboard />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/contacts"
+        element={
+          <ProtectedLayout>
+            <ContactList />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/contacts/new"
+        element={
+          <ProtectedLayout>
+            <ContactCreate />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/contacts/:id/edit"
+        element={
+          <ProtectedLayout>
+            <ContactEdit />
           </ProtectedLayout>
         }
       />

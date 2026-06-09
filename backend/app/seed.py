@@ -2,7 +2,6 @@ from app.auth import hash_password
 from app.models.role import Permission, Role
 from app.models.user import User
 
-
 PERMISSIONS_DATA = [
     ("read_user", "View users"),
     ("create_user", "Create users"),
@@ -12,6 +11,10 @@ PERMISSIONS_DATA = [
     ("create_role", "Create roles"),
     ("update_role", "Update roles"),
     ("delete_role", "Delete roles"),
+    ("read_contact", "View contacts"),
+    ("create_contact", "Create contacts"),
+    ("update_contact", "Update contacts"),
+    ("delete_contact", "Delete contacts"),
 ]
 
 
@@ -29,12 +32,22 @@ def seed_database(db, admin_email: str = "admin@prueba.com"):
 
     admin_role = Role(name="admin", description="Administrator with full access")
     user_role = Role(name="user", description="Regular user")
+    agent_role = Role(
+        name="agent",
+        description="Agent who manages assigned contacts",
+    )
     db.add(admin_role)
     db.add(user_role)
+    db.add(agent_role)
     db.flush()
 
     admin_role.permissions = list(perm_objects.values())
     user_role.permissions = [perm_objects["read_user"], perm_objects["update_user"]]
+    agent_role.permissions = [
+        perm_objects["read_contact"],
+        perm_objects["create_contact"],
+        perm_objects["update_contact"],
+    ]
     db.flush()
 
     admin_user = User(
