@@ -23,16 +23,71 @@ export default function Dashboard() {
     navigate("/login");
   }
 
-  if (error) return <p style={{ color: "red" }}>{error}</p>;
-  if (!user) return <p>Loading...</p>;
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="rounded-lg bg-red-50 px-6 py-4 text-sm text-red-600">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
-    <div style={{ maxWidth: 600, margin: "100px auto", padding: 20 }}>
-      <h1>Dashboard</h1>
-      <p>Welcome, {user.name}!</p>
-      <p>Email: {user.email}</p>
-      <p>ID: {user.id}</p>
-      <button onClick={handleLogout}>Logout</button>
+    <div className="min-h-screen bg-gray-50">
+      <header className="border-b border-gray-200 bg-white shadow-sm">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
+          <h1 className="text-xl font-bold text-gray-900">Prueba App</h1>
+          <button
+            onClick={handleLogout}
+            className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
+          >
+            Sign out
+          </button>
+        </div>
+      </header>
+      <main className="mx-auto max-w-4xl px-4 py-8">
+        <div className="rounded-xl bg-white p-8 shadow-sm ring-1 ring-gray-200">
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 text-xl font-bold text-indigo-600">
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Welcome, {user.name}!
+              </h2>
+              <p className="text-gray-500">{user.email}</p>
+            </div>
+          </div>
+          <hr className="my-6 border-gray-200" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-lg bg-gray-50 p-4">
+              <p className="text-sm font-medium text-gray-500">Name</p>
+              <p className="mt-1 text-gray-900">{user.name}</p>
+            </div>
+            <div className="rounded-lg bg-gray-50 p-4">
+              <p className="text-sm font-medium text-gray-500">Email</p>
+              <p className="mt-1 text-gray-900">{user.email}</p>
+            </div>
+            <div className="rounded-lg bg-gray-50 p-4">
+              <p className="text-sm font-medium text-gray-500">User ID</p>
+              <p className="mt-1 text-gray-900">{user.id}</p>
+            </div>
+            <div className="rounded-lg bg-gray-50 p-4">
+              <p className="text-sm font-medium text-gray-500">Status</p>
+              <p className="mt-1 text-green-600">Active</p>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
