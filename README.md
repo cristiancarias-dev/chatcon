@@ -2,6 +2,10 @@
 
 Proyecto base con stack FastAPI + React + PostgreSQL.
 
+> 📖 **Documentación de diseño:** antes de hacer cambios, consultar
+> [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (stack, capas, estructura)
+> y [`docs/DESIGN.md`](docs/DESIGN.md) (decisiones arquitectónicas, ADRs).
+
 ## Stack
 
 | Categoría     | Tecnología                     |

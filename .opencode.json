@@ -1,0 +1,9 @@
+{
+  "skills": [
+    {
+      "name": "prueba-app-design",
+      "description": "Architecture and design rules for Prueba App project",
+      "file": ".opencode/skill.md"
+    }
+  ]
+}
