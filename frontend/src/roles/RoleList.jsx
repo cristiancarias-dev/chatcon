@@ -104,7 +104,7 @@ export default function RoleList() {
                   <td className="whitespace-nowrap px-6 py-4 text-gray-400">#{role.id}</td>
                   <td className="whitespace-nowrap px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-400 to-purple-600 text-xs font-bold text-white">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 text-xs font-bold text-white">
                         {role.name.charAt(0).toUpperCase()}
                       </div>
                       <span className="font-medium text-gray-900">{role.name}</span>

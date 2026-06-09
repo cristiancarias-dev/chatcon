@@ -74,7 +74,7 @@ export default function ContactEdit() {
 
       <ErrorAlert message={error} />
 
-      <form onSubmit={handleSubmit} className="card-hover animate-slide-up max-w-2xl space-y-6 p-8">
+      <form onSubmit={handleSubmit} className="bubble max-w-2xl space-y-6">
         <div className="grid gap-6 sm:grid-cols-2">
           <div>
             <label className="block text-sm font-medium text-gray-700">Name *</label>
@@ -83,7 +83,7 @@ export default function ContactEdit() {
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
-              className="input-field mt-1"
+              className="input-field mt-1.5"
             />
           </div>
           <div>
@@ -93,7 +93,7 @@ export default function ContactEdit() {
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               required
-              className="input-field mt-1"
+              className="input-field mt-1.5"
             />
           </div>
         </div>
@@ -104,7 +104,7 @@ export default function ContactEdit() {
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="input-field mt-1"
+              className="input-field mt-1.5"
             />
           </div>
           <div>
@@ -112,7 +112,7 @@ export default function ContactEdit() {
             <select
               value={assignedAgentId ?? ""}
               onChange={(e) => setAssignedAgentId(e.target.value ? Number(e.target.value) : null)}
-              className="input-field mt-1"
+              className="input-field mt-1.5"
             >
               <option value="">— Unassigned —</option>
               {agents.map((a) => (
@@ -127,13 +127,13 @@ export default function ContactEdit() {
             value={form.notes}
             onChange={(e) => setForm({ ...form, notes: e.target.value })}
             rows={3}
-            className="input-field mt-1"
+            className="input-field mt-1.5"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">Status</label>
-          <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 px-4 py-3 transition-all hover:border-primary-200 has-[:checked]:border-primary-300 has-[:checked]:bg-primary-50">
+          <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 px-4 py-3 transition-all hover:border-primary-200 has-[:checked]:border-primary-300 has-[:checked]:bg-primary-50">
             <input
               type="checkbox"
               checked={form.is_active}

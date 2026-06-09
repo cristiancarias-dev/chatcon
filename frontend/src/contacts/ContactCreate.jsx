@@ -47,7 +47,7 @@ export default function ContactCreate() {
 
       <ErrorAlert message={error} />
 
-      <form onSubmit={handleSubmit} className="card-hover animate-slide-up max-w-2xl space-y-6 p-8">
+      <form onSubmit={handleSubmit} className="bubble max-w-2xl space-y-6">
         <div className="grid gap-6 sm:grid-cols-2">
           <div>
             <label className="block text-sm font-medium text-gray-700">Name *</label>
@@ -57,7 +57,7 @@ export default function ContactCreate() {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
               placeholder="John Doe"
-              className="input-field mt-1"
+              className="input-field mt-1.5"
             />
           </div>
           <div>
@@ -68,7 +68,7 @@ export default function ContactCreate() {
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               required
               placeholder="+521234567890"
-              className="input-field mt-1"
+              className="input-field mt-1.5"
             />
           </div>
         </div>
@@ -80,7 +80,7 @@ export default function ContactCreate() {
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               placeholder="john@example.com"
-              className="input-field mt-1"
+              className="input-field mt-1.5"
             />
           </div>
           <div>
@@ -88,7 +88,7 @@ export default function ContactCreate() {
             <select
               value={form.assigned_agent_id ?? ""}
               onChange={(e) => setForm({ ...form, assigned_agent_id: e.target.value ? Number(e.target.value) : null })}
-              className="input-field mt-1"
+              className="input-field mt-1.5"
             >
               <option value="">— Unassigned —</option>
               {agents.map((a) => (
@@ -104,7 +104,7 @@ export default function ContactCreate() {
             onChange={(e) => setForm({ ...form, notes: e.target.value })}
             rows={3}
             placeholder="Any additional information..."
-            className="input-field mt-1"
+            className="input-field mt-1.5"
           />
         </div>
 

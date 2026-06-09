@@ -87,31 +87,50 @@ export default function Layout({ children }) {
     user?.is_superuser || user?.roles?.some((r) => r.name === "admin");
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-100">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/60 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-white shadow-lg ring-1 ring-gray-200 transition-transform duration-200 lg:static lg:translate-x-0 ${
+        className={`chat-sidebar fixed inset-y-0 left-0 z-50 flex w-64 flex-col shadow-xl transition-transform duration-200 lg:static lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Brand */}
-        <div className="flex h-16 items-center gap-3 border-b border-gray-200 px-6">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 text-sm font-bold text-white">
-            P
+        <div className="flex h-16 items-center gap-3 border-b border-white/10 px-6">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white shadow-lg">
+            C
           </div>
-          <span className="text-lg font-bold text-gray-900">Prueba App</span>
+          <span className="text-lg font-bold text-white">ChatCon</span>
+        </div>
+
+        {/* Search bar (WhatsApp style) */}
+        <div className="relative px-3 py-3">
+          <svg
+            className="absolute left-6 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search or start new chat"
+            className="search-input"
+            readOnly
+          />
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3 py-4">
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-1">
           {navItems.map((item) => {
             if (item.admin && !canAccessAdmin) return null;
 
@@ -124,10 +143,10 @@ export default function Layout({ children }) {
                 <div key={item.label}>
                   <button
                     onClick={() => toggleMenu(item.label)}
-                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                       isChildActive
-                        ? "bg-primary-50 text-primary-700"
-                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                        ? "sidebar-link-active"
+                        : "text-gray-300 hover:bg-primary-700/50 hover:text-white"
                     }`}
                   >
                     {item.icon}
@@ -143,7 +162,7 @@ export default function Layout({ children }) {
                     </svg>
                   </button>
                   {isOpen && (
-                    <div className="ml-4 mt-1 space-y-1 border-l border-gray-200 pl-3">
+                    <div className="ml-2 mt-0.5 space-y-0.5 border-l border-white/10 pl-2">
                       {item.children.map((child) => {
                         const isActive = location.pathname === child.path;
                         return (
@@ -151,10 +170,10 @@ export default function Layout({ children }) {
                             key={child.path}
                             to={child.path}
                             onClick={() => setSidebarOpen(false)}
-                            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                            className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
                               isActive
-                                ? "bg-primary-50 text-primary-700"
-                                : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                                ? "sidebar-link-active"
+                                : "text-gray-400 hover:bg-primary-700/50 hover:text-white"
                             }`}
                           >
                             {child.label}
@@ -173,10 +192,8 @@ export default function Layout({ children }) {
                 key={item.path}
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-primary-50 text-primary-700"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                className={`sidebar-link ${
+                  isActive ? "sidebar-link-active" : ""
                 }`}
               >
                 {item.icon}
@@ -187,43 +204,43 @@ export default function Layout({ children }) {
         </nav>
 
         {/* User info & logout */}
-        <div className="border-t border-gray-200 p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white">
+        <div className="border-t border-white/10 p-3">
+          <div className="flex items-center gap-3 rounded-xl bg-primary-900/30 p-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white shadow-md">
               {user?.name?.charAt(0).toUpperCase() || "?"}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="truncate text-sm font-medium text-gray-900">
+              <p className="truncate text-sm font-medium text-white">
                 {user?.name}
               </p>
-              <p className="truncate text-xs text-gray-500">{user?.email}</p>
+              <p className="truncate text-xs text-gray-400">{user?.email}</p>
             </div>
+            <button
+              onClick={handleLogout}
+              className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+              title="Sign out"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={handleLogout}
-            className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-            </svg>
-            Sign out
-          </button>
         </div>
       </aside>
 
       {/* Main content */}
       <div className="flex flex-1 flex-col min-w-0">
         {/* Top bar (mobile) */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-gray-200 bg-white px-4 shadow-sm lg:hidden">
+        <header className="chat-header sticky top-0 z-30 flex h-16 items-center gap-4 px-4 shadow-md lg:hidden">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+            className="rounded-lg p-2 text-white/80 hover:bg-white/10 hover:text-white"
           >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
           </button>
-          <span className="text-lg font-bold text-gray-900">Prueba App</span>
+          <span className="text-lg font-bold text-white">ChatCon</span>
         </header>
 
         {/* Page content */}

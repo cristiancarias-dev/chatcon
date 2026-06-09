@@ -29,19 +29,26 @@ export default function Register() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 via-white to-primary-50 px-4">
-      <div className="w-full max-w-md animate-slide-up">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-100 via-white to-primary-50 px-4">
+      {/* Decorative bubbles */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-primary-100/40 blur-3xl" />
+        <div className="absolute -bottom-20 -left-20 h-80 w-80 rounded-full bg-primary-200/30 blur-3xl" />
+        <div className="absolute top-1/3 left-1/4 h-32 w-32 rounded-full bg-primary-50/60 blur-2xl" />
+      </div>
+
+      <div className="relative w-full max-w-md animate-slide-up">
         {/* Brand */}
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 text-2xl font-bold text-white shadow-lg">
-            P
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 text-2xl font-bold text-white shadow-xl ring-4 ring-primary-100">
+            C
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Create account</h1>
-          <p className="mt-2 text-gray-500">Get started with Prueba App</p>
+          <p className="mt-1.5 text-gray-500">Get started with ChatCon</p>
         </div>
 
         {/* Card */}
-        <div className="card p-8">
+        <div className="rounded-2xl bg-white p-8 shadow-xl ring-1 ring-gray-200 border-l-4 border-primary-500">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700">Name</label>
@@ -50,7 +57,7 @@ export default function Register() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="input-field mt-1"
+                className="input-field mt-1.5"
                 placeholder="John Doe"
               />
             </div>
@@ -61,7 +68,7 @@ export default function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="input-field mt-1"
+                className="input-field mt-1.5"
                 placeholder="you@example.com"
               />
             </div>
@@ -73,7 +80,7 @@ export default function Register() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="input-field mt-1"
+                className="input-field mt-1.5"
                 placeholder="At least 6 characters"
               />
             </div>

@@ -4,10 +4,10 @@ import { request } from "../shared/http";
 import Loading from "../shared/Loading";
 
 const statCards = [
-  { label: "Total Users", value: "--", color: "from-blue-500 to-blue-600", icon: "👥" },
-  { label: "Active Users", value: "--", color: "from-green-500 to-green-600", icon: "✅" },
-  { label: "Roles", value: "--", color: "from-purple-500 to-purple-600", icon: "🛡️" },
-  { label: "Permissions", value: "--", color: "from-amber-500 to-amber-600", icon: "🔑" },
+  { label: "Total Users", value: "--", icon: "👥" },
+  { label: "Active Users", value: "--", icon: "✅" },
+  { label: "Roles", value: "--", icon: "🛡️" },
+  { label: "Permissions", value: "--", icon: "🔑" },
 ];
 
 export default function Dashboard() {
@@ -48,19 +48,22 @@ export default function Dashboard() {
         <p className="mt-1 text-gray-500">Here&apos;s what&apos;s happening with your application.</p>
       </div>
 
-      {/* Stats grid */}
+      {/* Stats grid - WhatsApp bubble style */}
       <div className="mb-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {displayStats.map((stat) => (
+        {displayStats.map((stat, i) => (
           <div
             key={stat.label}
-            className="card-hover animate-slide-up overflow-hidden p-0"
+            className="animate-slide-up overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-gray-200 transition-shadow hover:shadow-lg"
+            style={{ animationDelay: `${i * 80}ms` }}
           >
-            <div className={`bg-gradient-to-r ${stat.color} px-5 py-4`}>
-              <p className="text-3xl font-bold text-white">{stat.value}</p>
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+              <span className="text-3xl font-bold text-primary-600">{stat.value}</span>
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-lg">
+                {stat.icon}
+              </span>
             </div>
-            <div className="flex items-center justify-between px-5 py-3">
+            <div className="px-5 py-3">
               <span className="text-sm font-medium text-gray-600">{stat.label}</span>
-              <span className="text-lg">{stat.icon}</span>
             </div>
           </div>
         ))}
@@ -69,9 +72,9 @@ export default function Dashboard() {
       {/* User profile + Admin quick links */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Profile card */}
-        <div className="card-hover animate-slide-up p-6 lg:col-span-2">
+        <div className="bubble lg:col-span-2">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-xl font-bold text-white shadow-md">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-xl font-bold text-white shadow-md ring-4 ring-primary-100">
               {user.name.charAt(0).toUpperCase()}
             </div>
             <div>
@@ -80,17 +83,17 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-lg bg-gray-50 p-4">
+            <div className="rounded-xl bg-gray-50 p-4 ring-1 ring-gray-100">
               <p className="text-xs font-medium uppercase tracking-wider text-gray-400">User ID</p>
               <p className="mt-1 text-sm font-medium text-gray-900">{user.id}</p>
             </div>
-            <div className="rounded-lg bg-gray-50 p-4">
+            <div className="rounded-xl bg-gray-50 p-4 ring-1 ring-gray-100">
               <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Status</p>
               <p className="mt-1">
                 <span className="badge-green">Active</span>
               </p>
             </div>
-            <div className="rounded-lg bg-gray-50 p-4">
+            <div className="rounded-xl bg-gray-50 p-4 ring-1 ring-gray-100">
               <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Superuser</p>
               <p className="mt-1">
                 <span className={user.is_superuser ? "badge-yellow" : "badge-gray"}>
@@ -98,7 +101,7 @@ export default function Dashboard() {
                 </span>
               </p>
             </div>
-            <div className="rounded-lg bg-gray-50 p-4">
+            <div className="rounded-xl bg-gray-50 p-4 ring-1 ring-gray-100">
               <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Roles</p>
               <p className="mt-1 text-sm font-medium text-gray-900">
                 {user.roles?.length ? user.roles.map((r) => r.name).join(", ") : "—"}
@@ -108,16 +111,16 @@ export default function Dashboard() {
         </div>
 
         {/* Admin quick links */}
-        <div className="card-hover animate-slide-up p-6">
+        <div className="bubble">
           <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">
             Quick Actions
           </h3>
           <div className="space-y-3">
             <Link
               to="/users"
-              className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 transition-all hover:border-primary-200 hover:bg-primary-50"
+              className="flex items-center gap-3 rounded-xl border border-gray-200 p-4 transition-all hover:border-primary-200 hover:bg-primary-50"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-lg">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-100 text-lg">
                 👥
               </div>
               <div>
@@ -127,9 +130,9 @@ export default function Dashboard() {
             </Link>
             <Link
               to="/roles"
-              className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 transition-all hover:border-primary-200 hover:bg-primary-50"
+              className="flex items-center gap-3 rounded-xl border border-gray-200 p-4 transition-all hover:border-primary-200 hover:bg-primary-50"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 text-lg">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 text-lg">
                 🛡️
               </div>
               <div>
@@ -138,15 +141,15 @@ export default function Dashboard() {
               </div>
             </Link>
             <Link
-              to="/users/new"
-              className="flex items-center gap-3 rounded-lg border-2 border-dashed border-gray-200 p-4 transition-all hover:border-primary-300 hover:bg-primary-50"
+              to="/contacts"
+              className="flex items-center gap-3 rounded-xl border-2 border-dashed border-gray-200 p-4 transition-all hover:border-primary-300 hover:bg-primary-50"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-lg">
-                ➕
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 text-lg">
+                💬
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900">New User</p>
-                <p className="text-xs text-gray-400">Add a new user</p>
+                <p className="text-sm font-medium text-gray-900">View Contacts</p>
+                <p className="text-xs text-gray-400">Manage your contacts</p>
               </div>
             </Link>
           </div>

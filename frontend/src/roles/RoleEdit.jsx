@@ -64,7 +64,7 @@ export default function RoleEdit() {
       <ErrorAlert message={error} />
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="card-hover animate-slide-up max-w-2xl space-y-6 p-8">
+      <form onSubmit={handleSubmit} className="bubble max-w-2xl space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700">Name</label>
           <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required

@@ -66,90 +66,87 @@ export default function ContactList() {
       </div>
 
       {/* Search */}
-      <div className="mb-4 animate-slide-up">
+      <div className="relative mb-4 animate-slide-up">
+        <svg className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+        </svg>
         <input
           type="text"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-          placeholder="Search by name or phone..."
-          className="input-field max-w-sm"
+          placeholder="Search contacts..."
+          className="input-field max-w-sm pl-10"
         />
       </div>
 
       <ErrorAlert message={error} />
 
-      {/* Table */}
-      <div className="animate-slide-up overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-gray-500">ID</th>
-                <th className="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-gray-500">Name</th>
-                <th className="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-gray-500">Phone</th>
-                <th className="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-gray-500">Email</th>
-                <th className="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-gray-500">Agent</th>
-                <th className="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
-                <th className="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {contacts.map((c, i) => (
-                <tr key={c.id} className="transition-colors hover:bg-gray-50" style={{ animationDelay: `${i * 30}ms` }}>
-                  <td className="whitespace-nowrap px-6 py-4 text-gray-400">#{c.id}</td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-xs font-bold text-white">
-                        {c.name.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="font-medium text-gray-900">{c.name}</span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-gray-500">{c.phone}</td>
-                  <td className="whitespace-nowrap px-6 py-4 text-gray-500">{c.email || <span className="text-gray-300">—</span>}</td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    {c.assigned_agent ? (
-                      <span className="badge-blue">{c.assigned_agent.name}</span>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <span className={c.is_active ? "badge-green" : "badge-red"}>
-                      {c.is_active ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right">
-                    <Link to={`/contacts/${c.id}/edit`} className="btn-ghost text-primary-600 hover:text-primary-700">
-                      Edit
-                    </Link>
-                    <button onClick={() => handleDelete(c.id)} className="btn-ghost text-red-500 hover:text-red-700">
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {contacts.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center">
-                    <div className="mx-auto max-w-sm">
-                      <p className="text-4xl">📞</p>
-                      <p className="mt-3 text-sm font-medium text-gray-900">No contacts yet</p>
-                      <p className="mt-1 text-sm text-gray-500">
-                        {search ? "No contacts match your search." : "Get started by creating your first contact."}
-                      </p>
-                      {!search && (
-                        <Link to="/contacts/new" className="btn-primary mt-4">
-                          Create Contact
-                        </Link>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+      {/* Contact list - WhatsApp style */}
+      <div className="animate-slide-up space-y-2">
+        {contacts.length === 0 ? (
+          <div className="bubble py-16 text-center">
+            <p className="text-4xl">📞</p>
+            <p className="mt-3 text-sm font-medium text-gray-900">No contacts yet</p>
+            <p className="mt-1 text-sm text-gray-500">
+              {search ? "No contacts match your search." : "Get started by creating your first contact."}
+            </p>
+            {!search && (
+              <Link to="/contacts/new" className="btn-primary mt-4 inline-flex">
+                Create Contact
+              </Link>
+            )}
+          </div>
+        ) : (
+          contacts.map((c, i) => (
+            <div
+              key={c.id}
+              className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100 transition-all hover:shadow-md hover:ring-primary-200"
+              style={{ animationDelay: `${i * 30}ms` }}
+            >
+              {/* Avatar */}
+              <div className="relative flex-shrink-0">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white shadow-md">
+                  {c.name.charAt(0).toUpperCase()}
+                </div>
+                <span className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white ${c.is_active ? "bg-green-400" : "bg-gray-400"}`} />
+              </div>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-gray-900 truncate">{c.name}</p>
+                  <span className={`text-xs font-medium ${c.is_active ? "text-green-600" : "text-gray-400"}`}>
+                    {c.is_active ? "Active" : "Inactive"}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500 truncate mt-0.5">{c.phone}</p>
+                {c.assigned_agent && (
+                  <p className="text-xs text-primary-600 mt-0.5">
+                    Agent: {c.assigned_agent.name}
+                  </p>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Link
+                  to={`/contacts/${c.id}/edit`}
+                  className="btn-ghost text-primary-600 hover:text-primary-700"
+                >
+                  Edit
+                </Link>
+                <button
+                  onClick={() => handleDelete(c.id)}
+                  className="btn-ghost text-red-500 hover:text-red-700"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Pagination */}
