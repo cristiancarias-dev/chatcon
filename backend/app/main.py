@@ -4,16 +4,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import api_router
 from app.database import Base, engine
 
-Base.metadata.create_all(bind=engine)
-
-from app.auth import hash_password
-from app.database import SessionLocal
-from app.models.user import User
+app = FastAPI(title="Prueba API", version="0.1.0")
 
 
-def seed_initial_user():
-    db = SessionLocal()
+@app.on_event("startup")
+def on_startup():
+    from app.auth import hash_password
+    from app.database import SessionLocal
+    from app.models.user import User
+
+    from app.database import Base, engine
+    Base.metadata.create_all(bind=engine)
+
     try:
+        db = SessionLocal()
         existing = db.query(User).filter(User.email == "admin@prueba.com").first()
         if not existing:
             db.add(
@@ -27,11 +31,6 @@ def seed_initial_user():
             db.commit()
     finally:
         db.close()
-
-
-app = FastAPI(title="Prueba API", version="0.1.0")
-
-seed_initial_user()
 
 app.add_middleware(
     CORSMiddleware,

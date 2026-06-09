@@ -11,7 +11,18 @@ async function request(endpoint, options = {}) {
     localStorage.removeItem("token");
     window.location.href = "/login";
   }
-  const data = await res.json();
+  const text = await res.text();
+  if (!text) {
+    throw new Error("Empty response from server");
+  }
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(
+      `Server returned HTML instead of JSON (status ${res.status}). Check if the backend is running.`
+    );
+  }
   if (!res.ok) {
     throw new Error(data.detail || "Request failed");
   }
