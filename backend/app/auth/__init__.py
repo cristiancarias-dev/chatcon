@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models.user import User
+from app.models.role import Permission
 from app.schemas.user import TokenData
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -62,3 +63,30 @@ def get_current_user(
             detail="User not found",
         )
     return user
+
+
+def require_permission(codename: str):
+    def checker(
+        user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    ) -> User:
+        if user.is_superuser:
+            return user
+        perm = (
+            db.query(Permission)
+            .filter(Permission.codename == codename)
+            .first()
+        )
+        if perm is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Permission not found",
+            )
+        for role in user.roles:
+            if perm in role.permissions:
+                return user
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions",
+        )
+
+    return checker
