@@ -8,9 +8,11 @@ from app.repositories.conversation_repository import (
     ConversationRepository,
     MessageRepository,
 )
+from app.repositories.whatsapp_account_repository import WhatsAppAccountRepository
 from app.schemas.conversation import (
     ConversationCreate,
     ConversationStatusUpdate,
+    ConversationUpdate,
     MessageCreate,
 )
 from app.services.conversation_service import ConversationService
@@ -24,6 +26,10 @@ def get_conv_repo(db: Session = Depends(get_db)) -> ConversationRepository:
 
 def get_msg_repo(db: Session = Depends(get_db)) -> MessageRepository:
     return MessageRepository(db)
+
+
+def get_wa_repo(db: Session = Depends(get_db)) -> WhatsAppAccountRepository:
+    return WhatsAppAccountRepository(db)
 
 
 @router.get("/")
@@ -86,6 +92,18 @@ def update_conversation_status(
     return service.update_status(conversation_id, data.status, current_user)
 
 
+@router.patch("/{conversation_id}")
+def update_conversation(
+    conversation_id: int,
+    data: ConversationUpdate,
+    current_user: User = Depends(require_permission("update_conversation")),
+    conv_repo: ConversationRepository = Depends(get_conv_repo),
+    msg_repo: MessageRepository = Depends(get_msg_repo),
+):
+    service = ConversationService(conv_repo, msg_repo)
+    return service.update(conversation_id, data, current_user)
+
+
 @router.get("/{conversation_id}/messages")
 def list_messages(
     conversation_id: int,
@@ -106,8 +124,9 @@ def send_message(
     current_user: User = Depends(require_permission("send_message")),
     conv_repo: ConversationRepository = Depends(get_conv_repo),
     msg_repo: MessageRepository = Depends(get_msg_repo),
+    wa_repo: WhatsAppAccountRepository = Depends(get_wa_repo),
 ):
-    service = ConversationService(conv_repo, msg_repo)
+    service = ConversationService(conv_repo, msg_repo, wa_account_repo=wa_repo)
     return service.send_message(conversation_id, data, current_user)
 
 

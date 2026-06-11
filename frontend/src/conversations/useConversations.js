@@ -53,3 +53,10 @@ export function markAsRead(conversationId) {
     method: "POST",
   });
 }
+
+export function updateConversation(id, data) {
+  return request(`/conversations/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}

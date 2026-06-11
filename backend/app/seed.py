@@ -19,6 +19,7 @@ PERMISSIONS_DATA = [
     ("create_conversation", "Create conversations"),
     ("update_conversation", "Update conversations"),
     ("send_message", "Send messages in conversations"),
+    ("manage_whatsapp_accounts", "Manage WhatsApp accounts"),
 ]
 
 AGENT_PERMS = [

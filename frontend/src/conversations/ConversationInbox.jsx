@@ -3,17 +3,15 @@ import {
   getConversations,
   getMessages,
   sendMessage,
+  createConversation,
   updateConversationStatus,
+  updateConversation,
   markAsRead,
 } from "./useConversations";
+import { getActiveAccounts, getTemplates } from "../whatsapp-accounts/useWhatsAppAccounts";
+import { getContacts } from "../contacts/useContacts";
 import Loading from "../shared/Loading";
 import ErrorAlert from "../shared/ErrorAlert";
-
-const TEMPLATES = [
-  { name: "welcome", label: "Welcome message" },
-  { name: "order_confirmed", label: "Order confirmed" },
-  { name: "support", label: "Support reply" },
-];
 
 function formatTime(dateStr) {
   const d = new Date(dateStr);
@@ -26,6 +24,40 @@ function formatTime(dateStr) {
     return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
   return d.toLocaleDateString([], { day: "2-digit", month: "2-digit" });
+}
+
+function WhatsAppStatusIcon({ status, errorCode, errorMessage, onResendTemplate }) {
+  if (!status) return null;
+  if (status === "sent") {
+    return (
+      <svg className="h-3.5 w-3.5 text-blue-300" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+      </svg>
+    );
+  }
+  if (status === "requires_template" || (errorCode === 131047)) {
+    return (
+      <div className="flex items-center gap-1">
+        <svg className="h-3.5 w-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+        </svg>
+        {onResendTemplate && (
+          <button
+            onClick={onResendTemplate}
+            className="ml-1 rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-medium text-amber-600 hover:bg-amber-100"
+            title={errorMessage || "Re-engagement message - resend as template"}
+          >
+            Template
+          </button>
+        )}
+      </div>
+    );
+  }
+  return (
+    <svg className="h-3.5 w-3.5 text-red-300" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+    </svg>
+  );
 }
 
 export default function ConversationInbox() {
@@ -42,6 +74,20 @@ export default function ConversationInbox() {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const messagesEndRef = useRef(null);
   const [convCount, setConvCount] = useState(0);
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [contacts, setContacts] = useState([]);
+  const [waAccounts, setWaAccounts] = useState([]);
+  const [newConvContact, setNewConvContact] = useState("");
+  const [newConvWA, setNewConvWA] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  const [showWASelector, setShowWASelector] = useState(false);
+  const [waAccountsList, setWaAccountsList] = useState([]);
+  const [resendingMsgId, setResendingMsgId] = useState(null);
+  const [availableTemplates, setAvailableTemplates] = useState([]);
+  const [templateParams, setTemplateParams] = useState([]);
+  const [templateParamCount, setTemplateParamCount] = useState(0);
 
   function loadConversations() {
     setError("");
@@ -65,6 +111,7 @@ export default function ConversationInbox() {
 
   useEffect(() => {
     loadConversations();
+    getActiveAccounts().then(setWaAccountsList).catch(() => {});
   }, [statusFilter, search]);
 
   function selectConversation(conv) {
@@ -79,6 +126,7 @@ export default function ConversationInbox() {
       .catch((err) => setError(err.message));
     setShowTemplates(false);
     setSelectedTemplate(null);
+    setTemplateParams([]);
   }
 
   function handleSend(e) {
@@ -89,20 +137,49 @@ export default function ConversationInbox() {
       : input.trim();
     if (!content) return;
     setSending(true);
+    const template_params =
+      selectedTemplate && templateParams.length > 0
+        ? templateParams
+        : null;
     sendMessage(activeConv.id, {
       content,
       message_type: selectedTemplate ? "template" : "text",
       template_name: selectedTemplate || null,
+      template_params,
     })
       .then((msg) => {
         setMessages((prev) => [...prev, msg]);
         setInput("");
         setSelectedTemplate(null);
+        setTemplateParams([]);
         setShowTemplates(false);
         loadConversations();
       })
       .catch((err) => setError(err.message))
       .finally(() => setSending(false));
+  }
+
+  function handleResendAsTemplate(msg) {
+    if (resendingMsgId || !activeConv) return;
+    setResendingMsgId(msg.id);
+    setError("");
+
+    const waAccount = waAccountsList.find(
+      (a) => a.id === activeConv.whatsapp_account_id
+    );
+    const templateName = waAccount?.default_template_name || "hello_world";
+
+    sendMessage(activeConv.id, {
+      content: msg.content,
+      message_type: "template",
+      template_name: templateName,
+    })
+      .then((newMsg) => {
+        setMessages((prev) => [...prev, newMsg]);
+        loadConversations();
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setResendingMsgId(null));
   }
 
   function handleToggleStatus() {
@@ -116,9 +193,74 @@ export default function ConversationInbox() {
       .catch((err) => setError(err.message));
   }
 
+  function handleAssignWA(accountId) {
+    if (!activeConv) return;
+    updateConversation(activeConv.id, { whatsapp_account_id: accountId || null })
+      .then((updated) => {
+        setActiveConv((prev) => ({ ...prev, whatsapp_account_id: updated.whatsapp_account_id }));
+        setShowWASelector(false);
+        loadConversations();
+      })
+      .catch((err) => setError(err.message));
+  }
+
+  function openCreateModal() {
+    setShowCreate(true);
+    setNewConvContact("");
+    setNewConvWA("");
+    setError("");
+    Promise.all([
+      getContacts({ limit: 500 }),
+      getActiveAccounts(),
+    ])
+      .then(([contactsData, waData]) => {
+        const available = (contactsData || []).filter(
+          (c) => !conversations.some((conv) => conv.contact_id === c.id)
+        );
+        setContacts(available);
+        setWaAccounts(waData || []);
+      })
+      .catch((err) => setError(err.message));
+  }
+
+  function handleCreateConversation(e) {
+    e.preventDefault();
+    if (!newConvContact) return;
+    setCreating(true);
+    setError("");
+    createConversation({
+      contact_id: parseInt(newConvContact),
+      whatsapp_account_id: newConvWA ? parseInt(newConvWA) : null,
+    })
+      .then((conv) => {
+        setShowCreate(false);
+        loadConversations();
+        selectConversation(conv);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setCreating(false));
+  }
+
+  function openWASelector() {
+    setShowWASelector(true);
+    getActiveAccounts()
+      .then(setWaAccountsList)
+      .catch(() => {});
+  }
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (activeConv?.whatsapp_account_id) {
+      getTemplates(activeConv.whatsapp_account_id)
+        .then(setAvailableTemplates)
+        .catch(() => setAvailableTemplates([]));
+    } else {
+      setAvailableTemplates([]);
+    }
+  }, [activeConv?.whatsapp_account_id]);
 
   const filterTabs = [
     { label: "All", value: null },
@@ -147,20 +289,31 @@ export default function ConversationInbox() {
               className="w-full rounded-xl border-0 bg-gray-100 px-4 py-2.5 pl-10 text-sm text-gray-900 placeholder-gray-400 outline-none ring-1 ring-gray-200 transition-all focus:ring-2 focus:ring-primary-400"
             />
           </div>
-          <div className="flex gap-1">
-            {filterTabs.map((tab) => (
-              <button
-                key={tab.label}
-                onClick={() => setStatusFilter(tab.value)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                  statusFilter === tab.value
-                    ? "bg-primary-100 text-primary-700"
-                    : "text-gray-500 hover:bg-gray-100"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          <div className="flex items-center justify-between gap-1">
+            <div className="flex gap-1">
+              {filterTabs.map((tab) => (
+                <button
+                  key={tab.label}
+                  onClick={() => setStatusFilter(tab.value)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                    statusFilter === tab.value
+                      ? "bg-primary-100 text-primary-700"
+                      : "text-gray-500 hover:bg-gray-100"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={openCreateModal}
+              className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-primary-100 hover:text-primary-600"
+              title="New conversation"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -175,7 +328,7 @@ export default function ConversationInbox() {
               <p className="text-xs text-gray-500 mt-1">
                 {search
                   ? "No matches found."
-                  : "Create a contact and start a conversation."}
+                  : "Click + to start a conversation."}
               </p>
             </div>
           ) : (
@@ -223,6 +376,14 @@ export default function ConversationInbox() {
                       >
                         {conv.status}
                       </span>
+                      {conv.whatsapp_account_id && (
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                          <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                          </svg>
+                          WA
+                        </span>
+                      )}
                       {conv.unread_count > 0 && (
                         <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary-500 px-1.5 text-[10px] font-bold text-white">
                           {conv.unread_count}
@@ -250,6 +411,12 @@ export default function ConversationInbox() {
             <p className="mt-1 text-sm text-gray-400">
               Select a conversation to start chatting
             </p>
+            <button onClick={openCreateModal} className="btn-primary mt-6">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              New Conversation
+            </button>
           </div>
         ) : (
           <>
@@ -265,6 +432,68 @@ export default function ConversationInbox() {
                 <p className="truncate text-xs text-gray-500">
                   {activeConv.contact_phone}
                 </p>
+              </div>
+              <div className="relative">
+                <button
+                  onClick={openWASelector}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-medium transition-colors ${
+                    activeConv.whatsapp_account_id
+                      ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  }`}
+                  title={activeConv.whatsapp_account_id ? "WhatsApp connected" : "Connect WhatsApp"}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                    </svg>
+                    {activeConv.whatsapp_account_id ? "WA" : "No WA"}
+                  </span>
+                </button>
+                {showWASelector && (
+                  <div className="absolute right-0 top-full z-50 mt-1 w-64 overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-gray-200">
+                    <div className="border-b border-gray-100 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                      WhatsApp Account
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleAssignWA(null)}
+                      className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-gray-50 ${
+                        !activeConv.whatsapp_account_id ? "bg-primary-50 text-primary-700" : "text-gray-700"
+                      }`}
+                    >
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-500">
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </span>
+                      None (DB only)
+                    </button>
+                    {waAccountsList.map((acc) => (
+                      <button
+                        key={acc.id}
+                        type="button"
+                        onClick={() => handleAssignWA(acc.id)}
+                        className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-gray-50 ${
+                          activeConv.whatsapp_account_id === acc.id ? "bg-primary-50 text-primary-700" : "text-gray-700"
+                        }`}
+                      >
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-600">
+                          {acc.name.charAt(0).toUpperCase()}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium">{acc.name}</p>
+                          <p className="truncate text-xs text-gray-400">{acc.phone_number}</p>
+                        </div>
+                        {activeConv.whatsapp_account_id === acc.id && (
+                          <svg className="h-4 w-4 flex-shrink-0 text-primary-600" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <button
                 onClick={handleToggleStatus}
@@ -325,15 +554,27 @@ export default function ConversationInbox() {
                         >
                           {formatTime(msg.created_at)}
                           {msg.sender_type === "agent" && (
-                            <svg
-                              className={`h-3.5 w-3.5 ${
-                                msg.is_read ? "text-blue-300" : "text-white/50"
-                              }`}
-                              viewBox="0 0 24 24"
-                              fill="currentColor"
-                            >
-                              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                            </svg>
+                            <>
+                              <WhatsAppStatusIcon
+                                status={msg.whatsapp_status}
+                                errorCode={msg.whatsapp_error_code}
+                                errorMessage={msg.whatsapp_error_message}
+                                onResendTemplate={
+                                  msg.whatsapp_error_code === 131047 || msg.whatsapp_status === "requires_template"
+                                    ? () => handleResendAsTemplate(msg)
+                                    : null
+                                }
+                              />
+                              <svg
+                                className={`h-3.5 w-3.5 ${
+                                  msg.is_read ? "text-blue-300" : "text-white/50"
+                                }`}
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                              >
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                              </svg>
+                            </>
                           )}
                         </div>
                       </div>
@@ -357,24 +598,44 @@ export default function ConversationInbox() {
                   </button>{" "}
                   to send messages.
                 </p>
-              ) : (
+              ) : activeConv.whatsapp_account_id ? (
                 <form onSubmit={handleSend} className="flex items-end gap-2">
                   <div className="relative flex-1">
                     {selectedTemplate && (
-                      <div className="mb-1.5 flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">
-                          Template: {selectedTemplate}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedTemplate(null);
-                              setShowTemplates(false);
-                            }}
-                            className="ml-1 text-primary-400 hover:text-primary-600"
-                          >
-                            &times;
-                          </button>
-                        </span>
+                      <div className="mb-1.5 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">
+                            Template: {selectedTemplate}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedTemplate(null);
+                                setShowTemplates(false);
+                              }}
+                              className="ml-1 text-primary-400 hover:text-primary-600"
+                            >
+                              &times;
+                            </button>
+                          </span>
+                        </div>
+                        {templateParams.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {templateParams.map((val, i) => (
+                              <input
+                                key={i}
+                                type="text"
+                                value={val}
+                                onChange={(e) => {
+                                  const next = [...templateParams];
+                                  next[i] = e.target.value;
+                                  setTemplateParams(next);
+                                }}
+                                placeholder={`Var {{${i + 1}}}`}
+                                className="w-28 rounded-lg border border-gray-200 px-2 py-1 text-xs outline-none focus:border-primary-400"
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                     <textarea
@@ -407,24 +668,53 @@ export default function ConversationInbox() {
                       </svg>
                     </button>
                     {showTemplates && (
-                      <div className="absolute bottom-full right-0 mb-2 w-52 overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-gray-200">
-                        {TEMPLATES.map((t) => (
-                          <button
-                            key={t.name}
-                            type="button"
-                            onClick={() => {
-                              setSelectedTemplate(t.name);
-                              setShowTemplates(false);
-                            }}
-                            className={`flex w-full items-center px-4 py-2.5 text-left text-sm transition-colors hover:bg-gray-50 ${
-                              selectedTemplate === t.name
-                                ? "bg-primary-50 text-primary-700"
-                                : "text-gray-700"
-                            }`}
-                          >
-                            {t.label}
-                          </button>
-                        ))}
+                      <div className="absolute bottom-full right-0 mb-2 w-64 overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-gray-200">
+                        {availableTemplates.length === 0 && (
+                          <p className="px-4 py-3 text-xs text-gray-400">No templates found</p>
+                        )}
+                        {availableTemplates.map((t) => {
+                          let paramCount = 0;
+                          try {
+                            const comps = typeof t.components === "string" ? JSON.parse(t.components) : (t.components || []);
+                            const body = comps.find((c) => c.type === "BODY" || c.type === "body");
+                            if (body?.text) {
+                              const matches = body.text.match(/\{\{\d+\}\}/g);
+                              paramCount = matches ? Math.max(...matches.map((m) => parseInt(m.replace(/\D/g, "")))) : 0;
+                            }
+                          } catch {}
+                          return (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedTemplate(t.name);
+                                setTemplateParams(Array(paramCount).fill(""));
+                                setShowTemplates(false);
+                              }}
+                              className={`flex w-full items-center px-4 py-2.5 text-left text-sm transition-colors hover:bg-gray-50 ${
+                                selectedTemplate === t.name
+                                  ? "bg-primary-50 text-primary-700"
+                                  : "text-gray-700"
+                              }`}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="truncate font-medium">{t.name}</div>
+                                <div className="truncate text-xs text-gray-400">{t.category || "—"}</div>
+                              </div>
+                              {t.status && (
+                                <span className={`ml-2 flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                  t.status === "APPROVED"
+                                    ? "bg-green-100 text-green-700"
+                                    : t.status === "PENDING"
+                                      ? "bg-yellow-100 text-yellow-700"
+                                      : "bg-gray-100 text-gray-500"
+                                }`}>
+                                  {t.status}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -445,11 +735,85 @@ export default function ConversationInbox() {
                     )}
                   </button>
                 </form>
+              ) : (
+                <div className="py-3 text-center">
+                  <p className="text-sm text-gray-400 mb-2">
+                    Connect a WhatsApp account to send messages
+                  </p>
+                  <button
+                    onClick={openWASelector}
+                    className="btn-primary text-xs"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                    </svg>
+                    Connect WhatsApp
+                  </button>
+                </div>
               )}
             </div>
           </>
         )}
       </div>
+
+      {/* New Conversation Modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowCreate(false)}>
+          <div className="mx-4 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900">New Conversation</h3>
+              <button onClick={() => setShowCreate(false)} className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <form onSubmit={handleCreateConversation} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Contact</label>
+                {contacts.length === 0 ? (
+                  <p className="text-sm text-gray-400">No available contacts. Create a contact first.</p>
+                ) : (
+                  <select
+                    value={newConvContact}
+                    onChange={(e) => setNewConvContact(e.target.value)}
+                    required
+                    className="input-field"
+                  >
+                    <option value="">Select a contact...</option>
+                    {contacts.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name} — {c.phone}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  WhatsApp Account <span className="text-xs text-gray-400">(optional)</span>
+                </label>
+                <select
+                  value={newConvWA}
+                  onChange={(e) => setNewConvWA(e.target.value)}
+                  className="input-field"
+                >
+                  <option value="">No WhatsApp (DB only)</option>
+                  {waAccounts.map((a) => (
+                    <option key={a.id} value={a.id}>{a.name} — {a.phone_number}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-3 pt-2">
+                <button type="submit" disabled={creating || contacts.length === 0} className="btn-primary">
+                  {creating ? "Creating..." : "Start Conversation"}
+                </button>
+                <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

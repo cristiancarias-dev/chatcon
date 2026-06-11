@@ -15,6 +15,9 @@ class Conversation(Base):
     assigned_agent_id = Column(
         Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
+    whatsapp_account_id = Column(
+        Integer, ForeignKey("whatsapp_accounts.id", ondelete="SET NULL"), nullable=True
+    )
     status = Column(String(20), default="open")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
@@ -23,6 +26,7 @@ class Conversation(Base):
 
     contact = relationship("Contact", backref="conversations")
     assigned_agent = relationship("User", backref="assigned_conversations")
+    whatsapp_account = relationship("WhatsAppAccount", backref="conversations")
 
 
 class Message(Base):
@@ -36,6 +40,9 @@ class Message(Base):
     content = Column(Text, nullable=False)
     message_type = Column(String(20), default="text")
     template_name = Column(String(100), nullable=True)
+    whatsapp_message_id = Column(String(255), nullable=True, index=True)
+    whatsapp_error_code = Column(Integer, nullable=True)
+    whatsapp_error_message = Column(Text, nullable=True)
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

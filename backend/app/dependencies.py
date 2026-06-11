@@ -9,6 +9,7 @@ from app.repositories.conversation_repository import (
 )
 from app.repositories.role_repository import PermissionRepository, RoleRepository
 from app.repositories.user_repository import UserRepository
+from app.repositories.whatsapp_account_repository import WhatsAppAccountRepository
 
 
 def get_user_repo(db: Session = Depends(get_db)) -> UserRepository:
@@ -33,3 +34,7 @@ def get_conv_repo(db: Session = Depends(get_db)) -> ConversationRepository:
 
 def get_msg_repo(db: Session = Depends(get_db)) -> MessageRepository:
     return MessageRepository(db)
+
+
+def get_wa_account_repo(db: Session = Depends(get_db)) -> WhatsAppAccountRepository:
+    return WhatsAppAccountRepository(db)

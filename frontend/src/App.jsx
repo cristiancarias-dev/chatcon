@@ -13,6 +13,11 @@ import ContactList from "./contacts/ContactList";
 import ContactCreate from "./contacts/ContactCreate";
 import ContactEdit from "./contacts/ContactEdit";
 import ConversationInbox from "./conversations/ConversationInbox";
+import WhatsAppAccountList from "./whatsapp-accounts/WhatsAppAccountList";
+import WhatsAppAccountCreate from "./whatsapp-accounts/WhatsAppAccountCreate";
+import WhatsAppAccountEdit from "./whatsapp-accounts/WhatsAppAccountEdit";
+import WhatsAppTemplateList from "./whatsapp-accounts/WhatsAppTemplateList";
+import WhatsAppTemplateCreate from "./whatsapp-accounts/WhatsAppTemplateCreate";
 import Layout from "./shared/Layout";
 
 function ProtectedLayout({ children }) {
@@ -86,6 +91,46 @@ export default function App() {
         element={
           <ProtectedLayout>
             <UserEdit />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/whatsapp-accounts"
+        element={
+          <ProtectedLayout>
+            <WhatsAppAccountList />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/whatsapp-accounts/new"
+        element={
+          <ProtectedLayout>
+            <WhatsAppAccountCreate />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/whatsapp-accounts/:id/edit"
+        element={
+          <ProtectedLayout>
+            <WhatsAppAccountEdit />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/whatsapp-accounts/:id/templates"
+        element={
+          <ProtectedLayout>
+            <WhatsAppTemplateList />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/whatsapp-accounts/:id/templates/new"
+        element={
+          <ProtectedLayout>
+            <WhatsAppTemplateCreate />
           </ProtectedLayout>
         }
       />
