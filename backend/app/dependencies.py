@@ -3,6 +3,10 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.repositories.contact_repository import ContactRepository
+from app.repositories.conversation_repository import (
+    ConversationRepository,
+    MessageRepository,
+)
 from app.repositories.role_repository import PermissionRepository, RoleRepository
 from app.repositories.user_repository import UserRepository
 
@@ -21,3 +25,11 @@ def get_permission_repo(db: Session = Depends(get_db)) -> PermissionRepository:
 
 def get_contact_repo(db: Session = Depends(get_db)) -> ContactRepository:
     return ContactRepository(db)
+
+
+def get_conv_repo(db: Session = Depends(get_db)) -> ConversationRepository:
+    return ConversationRepository(db)
+
+
+def get_msg_repo(db: Session = Depends(get_db)) -> MessageRepository:
+    return MessageRepository(db)

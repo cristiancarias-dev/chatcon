@@ -12,6 +12,7 @@ import RoleEdit from "./roles/RoleEdit";
 import ContactList from "./contacts/ContactList";
 import ContactCreate from "./contacts/ContactCreate";
 import ContactEdit from "./contacts/ContactEdit";
+import ConversationInbox from "./conversations/ConversationInbox";
 import Layout from "./shared/Layout";
 
 function ProtectedLayout({ children }) {
@@ -53,6 +54,14 @@ export default function App() {
         element={
           <ProtectedLayout>
             <ContactEdit />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/conversations"
+        element={
+          <ProtectedLayout>
+            <ConversationInbox />
           </ProtectedLayout>
         }
       />

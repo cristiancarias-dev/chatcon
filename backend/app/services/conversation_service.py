@@ -1,0 +1,202 @@
+from datetime import UTC, datetime
+
+from app.exceptions import (
+    ConflictException,
+    ForbiddenException,
+    NotFoundException,
+)
+from app.models.conversation import Conversation, Message
+from app.models.contact import Contact
+from app.models.user import User
+from app.repositories.conversation_repository import (
+    ConversationRepository,
+    MessageRepository,
+)
+from app.schemas.conversation import (
+    ConversationCreate,
+    ConversationRead,
+    ConversationDetail,
+    MessageCreate,
+    MessageRead,
+)
+
+
+class ConversationService:
+    def __init__(
+        self,
+        conv_repo: ConversationRepository,
+        msg_repo: MessageRepository,
+    ):
+        self.conv_repo = conv_repo
+        self.msg_repo = msg_repo
+
+    def _is_admin(self, user: User) -> bool:
+        return user.is_superuser or any(r.name == "admin" for r in user.roles)
+
+    def _get_contact(self, contact_id: int) -> Contact:
+        contact = self.conv_repo.db.query(Contact).filter(Contact.id == contact_id).first()
+        if not contact:
+            raise NotFoundException("Contact not found")
+        return contact
+
+    def _build_conversation_read(
+        self, conv: Conversation
+    ) -> ConversationRead:
+        last_msg = self.msg_repo.get_last_message(conv.id)
+        return ConversationRead(
+            id=conv.id,
+            contact_id=conv.contact_id,
+            contact_name=conv.contact.name,
+            contact_phone=conv.contact.phone,
+            assigned_agent_id=conv.assigned_agent_id,
+            status=conv.status,
+            message_count=self.conv_repo.get_message_count(conv.id),
+            unread_count=self.conv_repo.get_unread_count(conv.id),
+            last_message=last_msg.content if last_msg else None,
+            last_message_at=last_msg.created_at if last_msg else None,
+            created_at=conv.created_at,
+            updated_at=conv.updated_at,
+        )
+
+    def get_all(
+        self,
+        current_user: User,
+        skip: int = 0,
+        limit: int = 100,
+        status: str | None = None,
+        search: str | None = None,
+    ) -> list[ConversationRead]:
+        agent_id = None if self._is_admin(current_user) else current_user.id
+        conversations = self.conv_repo.get_all(
+            skip, limit, agent_id=agent_id, status=status, search=search
+        )
+        return [self._build_conversation_read(c) for c in conversations]
+
+    def count_all(
+        self,
+        current_user: User,
+        status: str | None = None,
+        search: str | None = None,
+    ) -> dict:
+        agent_id = None if self._is_admin(current_user) else current_user.id
+        total = self.conv_repo.count_all(agent_id=agent_id, status=status, search=search)
+        return {"count": total}
+
+    def get_by_id(self, conversation_id: int, current_user: User) -> ConversationDetail:
+        conv = self.conv_repo.get_by_id(conversation_id)
+        if not conv:
+            raise NotFoundException("Conversation not found")
+        if not self._is_admin(current_user) and conv.assigned_agent_id != current_user.id:
+            raise ForbiddenException("You can only view your own conversations")
+        return ConversationDetail(
+            id=conv.id,
+            contact_id=conv.contact_id,
+            contact_name=conv.contact.name,
+            contact_phone=conv.contact.phone,
+            assigned_agent_id=conv.assigned_agent_id,
+            status=conv.status,
+            created_at=conv.created_at,
+            updated_at=conv.updated_at,
+        )
+
+    def create(self, data: ConversationCreate, current_user: User) -> ConversationRead:
+        contact = self._get_contact(data.contact_id)
+        existing = self.conv_repo.get_by_contact(data.contact_id)
+        if existing:
+            raise ConflictException("A conversation with this contact already exists")
+
+        conv = Conversation(
+            contact_id=data.contact_id,
+            assigned_agent_id=data.assigned_agent_id or contact.assigned_agent_id or current_user.id,
+            status="open",
+        )
+        conv = self.conv_repo.create(conv)
+        return self._build_conversation_read(conv)
+
+    def update_status(
+        self, conversation_id: int, status: str, current_user: User
+    ) -> ConversationRead:
+        if status not in ("open", "closed"):
+            raise ValueError("Status must be 'open' or 'closed'")
+        conv = self.conv_repo.get_by_id(conversation_id)
+        if not conv:
+            raise NotFoundException("Conversation not found")
+        if not self._is_admin(current_user) and conv.assigned_agent_id != current_user.id:
+            raise ForbiddenException("You can only modify your own conversations")
+        conv.status = status
+        conv = self.conv_repo.save(conv)
+        return self._build_conversation_read(conv)
+
+    def get_messages(
+        self,
+        conversation_id: int,
+        current_user: User,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[MessageRead]:
+        conv = self.conv_repo.get_by_id(conversation_id)
+        if not conv:
+            raise NotFoundException("Conversation not found")
+        if not self._is_admin(current_user) and conv.assigned_agent_id != current_user.id:
+            raise ForbiddenException("You can only view your own conversations")
+
+        messages = self.msg_repo.get_by_conversation(conversation_id, skip, limit)
+        return [
+            MessageRead(
+                id=m.id,
+                conversation_id=m.conversation_id,
+                sender_type=m.sender_type,
+                content=m.content,
+                message_type=m.message_type,
+                template_name=m.template_name,
+                is_read=m.is_read,
+                created_at=m.created_at,
+            )
+            for m in messages
+        ]
+
+    def send_message(
+        self,
+        conversation_id: int,
+        data: MessageCreate,
+        current_user: User,
+    ) -> MessageRead:
+        conv = self.conv_repo.get_by_id(conversation_id)
+        if not conv:
+            raise NotFoundException("Conversation not found")
+        if not self._is_admin(current_user) and conv.assigned_agent_id != current_user.id:
+            raise ForbiddenException("You can only send messages in your own conversations")
+        if conv.status == "closed":
+            raise ConflictException("Cannot send messages in a closed conversation")
+
+        msg = Message(
+            conversation_id=conversation_id,
+            sender_type="agent",
+            content=data.content,
+            message_type=data.message_type or "text",
+            template_name=data.template_name,
+        )
+        msg = self.msg_repo.create(msg)
+
+        conv.contact.last_contacted_at = datetime.now(UTC)
+        self.conv_repo.db.commit()
+
+        return MessageRead(
+            id=msg.id,
+            conversation_id=msg.conversation_id,
+            sender_type=msg.sender_type,
+            content=msg.content,
+            message_type=msg.message_type,
+            template_name=msg.template_name,
+            is_read=msg.is_read,
+            created_at=msg.created_at,
+        )
+
+    def mark_read(self, conversation_id: int, current_user: User) -> dict:
+        conv = self.conv_repo.get_by_id(conversation_id)
+        if not conv:
+            raise NotFoundException("Conversation not found")
+        if not self._is_admin(current_user) and conv.assigned_agent_id != current_user.id:
+            raise ForbiddenException("Forbidden")
+        updated = self.msg_repo.mark_all_as_read(conversation_id)
+        return {"updated": updated}
