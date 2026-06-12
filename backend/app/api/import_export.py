@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 
-from app.auth import get_current_user, require_permission
+from app.auth import require_permission
 from app.database import get_db
 from app.models.user import User
 from app.services.import_export_service import HANDLERS, parse_csv

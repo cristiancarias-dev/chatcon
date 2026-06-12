@@ -1,11 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 
 from app.auth import require_permission
-from app.database import get_db
+from app.dependencies import get_wa_template_service
 from app.models.user import User
-from app.repositories.whatsapp_account_repository import WhatsAppAccountRepository
-from app.repositories.whatsapp_template_repository import WhatsAppTemplateRepository
 from app.schemas.whatsapp_template import WhatsAppTemplateCreate, WhatsAppTemplateRead
 from app.services.whatsapp_template_service import WhatsAppTemplateService
 
@@ -16,12 +13,8 @@ router = APIRouter()
 def list_templates(
     account_id: int,
     current_user: User = Depends(require_permission("manage_whatsapp_accounts")),
-    db: Session = Depends(get_db),
+    service: WhatsAppTemplateService = Depends(get_wa_template_service),
 ):
-    service = WhatsAppTemplateService(
-        WhatsAppTemplateRepository(db),
-        WhatsAppAccountRepository(db),
-    )
     return service.list_templates(account_id)
 
 
@@ -32,12 +25,8 @@ def list_templates(
 def refresh_templates(
     account_id: int,
     current_user: User = Depends(require_permission("manage_whatsapp_accounts")),
-    db: Session = Depends(get_db),
+    service: WhatsAppTemplateService = Depends(get_wa_template_service),
 ):
-    service = WhatsAppTemplateService(
-        WhatsAppTemplateRepository(db),
-        WhatsAppAccountRepository(db),
-    )
     try:
         return service.refresh_from_meta(account_id)
     except ValueError as e:
@@ -53,12 +42,8 @@ def create_template(
     account_id: int,
     data: WhatsAppTemplateCreate,
     current_user: User = Depends(require_permission("manage_whatsapp_accounts")),
-    db: Session = Depends(get_db),
+    service: WhatsAppTemplateService = Depends(get_wa_template_service),
 ):
-    service = WhatsAppTemplateService(
-        WhatsAppTemplateRepository(db),
-        WhatsAppAccountRepository(db),
-    )
     try:
         return service.create_template(account_id, data)
     except ValueError as e:
@@ -70,10 +55,6 @@ def delete_template(
     account_id: int,
     template_id: int,
     current_user: User = Depends(require_permission("manage_whatsapp_accounts")),
-    db: Session = Depends(get_db),
+    service: WhatsAppTemplateService = Depends(get_wa_template_service),
 ):
-    service = WhatsAppTemplateService(
-        WhatsAppTemplateRepository(db),
-        WhatsAppAccountRepository(db),
-    )
     service.delete_template(template_id)

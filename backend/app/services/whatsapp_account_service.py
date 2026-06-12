@@ -80,5 +80,5 @@ class WhatsAppAccountService:
         return self._to_read(account)
 
     def delete(self, account_id: int) -> None:
-        if not self.repo.delete(account_id):
+        if not self.repo.delete_by_id(account_id):
             raise NotFoundException("WhatsApp account not found")

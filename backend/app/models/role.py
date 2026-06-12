@@ -1,8 +1,7 @@
-from sqlalchemy import Column, Integer, String, Text, Table, ForeignKey
+from sqlalchemy import Column, ForeignKey, Integer, String, Table, Text
 from sqlalchemy.orm import relationship
 
 from app.database import Base
-
 
 user_roles = Table(
     "user_roles",

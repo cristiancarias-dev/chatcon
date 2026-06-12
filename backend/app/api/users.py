@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, status
 
 from app.auth import get_current_user, require_permission
-from app.dependencies import get_role_repo, get_user_repo
+from app.dependencies import get_user_service
 from app.models.user import User
-from app.schemas.user import UserCreate, UserRead, UserUpdate, UserWithRoles
+from app.schemas.user import UserRead, UserUpdate, UserWithRoles
 from app.services.user_service import UserService
 
 router = APIRouter()
@@ -17,10 +17,9 @@ def read_current_user(current_user: User = Depends(get_current_user)):
 @router.put("/me", response_model=UserRead)
 def update_current_user(
     user_data: UserUpdate,
-    repo=Depends(get_user_repo),
+    service: UserService = Depends(get_user_service),
     current_user: User = Depends(get_current_user),
 ):
-    service = UserService(repo)
     return service.update(current_user.id, user_data)
 
 
@@ -28,20 +27,18 @@ def update_current_user(
 def list_users(
     skip: int = 0,
     limit: int = 100,
-    repo=Depends(get_user_repo),
+    service: UserService = Depends(get_user_service),
     _: User = Depends(require_permission("read_user")),
 ):
-    service = UserService(repo)
     return service.get_all(skip, limit)
 
 
 @router.get("/{user_id}", response_model=UserWithRoles)
 def read_user(
     user_id: int,
-    repo=Depends(get_user_repo),
+    service: UserService = Depends(get_user_service),
     _: User = Depends(require_permission("read_user")),
 ):
-    service = UserService(repo)
     return service.get_by_id(user_id)
 
 
@@ -49,20 +46,18 @@ def read_user(
 def update_user(
     user_id: int,
     user_data: UserUpdate,
-    repo=Depends(get_user_repo),
+    service: UserService = Depends(get_user_service),
     _: User = Depends(require_permission("update_user")),
 ):
-    service = UserService(repo)
     return service.update(user_id, user_data)
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(
     user_id: int,
-    repo=Depends(get_user_repo),
+    service: UserService = Depends(get_user_service),
     _: User = Depends(require_permission("delete_user")),
 ):
-    service = UserService(repo)
     service.delete(user_id)
 
 
@@ -70,9 +65,7 @@ def delete_user(
 def update_user_roles(
     user_id: int,
     role_ids: list[int],
-    user_repo=Depends(get_user_repo),
-    role_repo=Depends(get_role_repo),
+    service: UserService = Depends(get_user_service),
     _: User = Depends(require_permission("update_user")),
 ):
-    service = UserService(user_repo, role_repo)
     return service.update_roles(user_id, role_ids)

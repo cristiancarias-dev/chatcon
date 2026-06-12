@@ -5,9 +5,10 @@ from abc import ABC, abstractmethod
 from sqlalchemy.orm import Session
 
 from app.auth import hash_password
-from app.exceptions import AppException
+from app.models.role import Role
 from app.models.user import User
-from app.models.role import Permission, Role
+from app.repositories.role_repository import PermissionRepository, RoleRepository
+from app.repositories.user_repository import UserRepository
 
 
 class ImportHandler(ABC):
@@ -42,6 +43,9 @@ class UserImportHandler(ImportHandler):
         ]
 
     def process_row(self, row: dict[str, str], db: Session) -> dict:
+        user_repo = UserRepository(db)
+        role_repo = RoleRepository(db)
+
         email = row.get("email", "").strip()
         name = row.get("name", "").strip()
         password = row.get("password", "").strip()
@@ -53,7 +57,7 @@ class UserImportHandler(ImportHandler):
         if not password:
             return {"error": "Password is required"}
 
-        existing = db.query(User).filter(User.email == email).first()
+        existing = user_repo.get_by_email(email)
         if existing:
             return {"error": f"Email '{email}' already exists"}
 
@@ -71,16 +75,14 @@ class UserImportHandler(ImportHandler):
         roles_str = row.get("roles", "").strip()
         if roles_str:
             role_names = [r.strip() for r in roles_str.split("|") if r.strip()]
-            roles = db.query(Role).filter(Role.name.in_(role_names)).all()
+            roles = role_repo.get_by_names(role_names)
             found_names = {r.name for r in roles}
             for rn in role_names:
                 if rn not in found_names:
                     return {"error": f"Role '{rn}' not found"}
             user.roles = roles
 
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+        user_repo.create(user)
         return {"created": user.id}
 
 
@@ -96,11 +98,14 @@ class RoleImportHandler(ImportHandler):
         ]
 
     def process_row(self, row: dict[str, str], db: Session) -> dict:
+        role_repo = RoleRepository(db)
+        perm_repo = PermissionRepository(db)
+
         name = row.get("name", "").strip()
         if not name:
             return {"error": "Name is required"}
 
-        existing = db.query(Role).filter(Role.name == name).first()
+        existing = role_repo.get_by_name(name)
         if existing:
             return {"error": f"Role '{name}' already exists"}
 
@@ -110,16 +115,14 @@ class RoleImportHandler(ImportHandler):
         perms_str = row.get("permissions", "").strip()
         if perms_str:
             codenames = [p.strip() for p in perms_str.split("|") if p.strip()]
-            permissions = db.query(Permission).filter(Permission.codename.in_(codenames)).all()
+            permissions = perm_repo.get_by_codenames(codenames)
             found = {p.codename for p in permissions}
             for cn in codenames:
                 if cn not in found:
                     return {"error": f"Permission '{cn}' not found"}
             role.permissions = permissions
 
-        db.add(role)
-        db.commit()
-        db.refresh(role)
+        role_repo.create(role)
         return {"created": role.id}
 
 

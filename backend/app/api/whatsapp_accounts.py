@@ -1,11 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 
 from app.auth import require_permission
-from app.database import get_db
+from app.dependencies import get_wa_account_service
 from app.models.user import User
 from app.providers.whatsapp import WhatsAppProvider
-from app.repositories.whatsapp_account_repository import WhatsAppAccountRepository
 from app.schemas.whatsapp_account import (
     WhatsAppAccountCreate,
     WhatsAppAccountRead,
@@ -16,16 +14,11 @@ from app.services.whatsapp_account_service import WhatsAppAccountService
 router = APIRouter()
 
 
-def get_repo(db: Session = Depends(get_db)) -> WhatsAppAccountRepository:
-    return WhatsAppAccountRepository(db)
-
-
 @router.get("/", response_model=list[WhatsAppAccountRead])
 def list_accounts(
     current_user: User = Depends(require_permission("manage_whatsapp_accounts")),
-    repo: WhatsAppAccountRepository = Depends(get_repo),
+    service: WhatsAppAccountService = Depends(get_wa_account_service),
 ):
-    service = WhatsAppAccountService(repo)
     return service.get_all()
 
 
@@ -33,9 +26,8 @@ def list_accounts(
 def create_account(
     data: WhatsAppAccountCreate,
     current_user: User = Depends(require_permission("manage_whatsapp_accounts")),
-    repo: WhatsAppAccountRepository = Depends(get_repo),
+    service: WhatsAppAccountService = Depends(get_wa_account_service),
 ):
-    service = WhatsAppAccountService(repo)
     return service.create(data)
 
 
@@ -43,9 +35,8 @@ def create_account(
 def read_account(
     account_id: int,
     current_user: User = Depends(require_permission("manage_whatsapp_accounts")),
-    repo: WhatsAppAccountRepository = Depends(get_repo),
+    service: WhatsAppAccountService = Depends(get_wa_account_service),
 ):
-    service = WhatsAppAccountService(repo)
     return service.get_by_id(account_id)
 
 
@@ -54,9 +45,8 @@ def update_account(
     account_id: int,
     data: WhatsAppAccountUpdate,
     current_user: User = Depends(require_permission("manage_whatsapp_accounts")),
-    repo: WhatsAppAccountRepository = Depends(get_repo),
+    service: WhatsAppAccountService = Depends(get_wa_account_service),
 ):
-    service = WhatsAppAccountService(repo)
     return service.update(account_id, data)
 
 
@@ -64,9 +54,8 @@ def update_account(
 def delete_account(
     account_id: int,
     current_user: User = Depends(require_permission("manage_whatsapp_accounts")),
-    repo: WhatsAppAccountRepository = Depends(get_repo),
+    service: WhatsAppAccountService = Depends(get_wa_account_service),
 ):
-    service = WhatsAppAccountService(repo)
     service.delete(account_id)
 
 
@@ -74,9 +63,9 @@ def delete_account(
 def subscribe_webhook(
     account_id: int,
     current_user: User = Depends(require_permission("manage_whatsapp_accounts")),
-    repo: WhatsAppAccountRepository = Depends(get_repo),
+    service: WhatsAppAccountService = Depends(get_wa_account_service),
 ):
-    account = repo.get_by_id(account_id)
+    account = service.repo.get_by_id(account_id)
     if not account:
         raise HTTPException(status_code=404, detail="WhatsApp account not found")
     if not account.business_account_id:

@@ -1,6 +1,5 @@
 from app.auth import hash_password
 from app.exceptions import ConflictException, NotFoundException
-from app.models.role import Role
 from app.models.user import User
 from app.repositories.role_repository import RoleRepository
 from app.repositories.user_repository import UserRepository
@@ -8,9 +7,9 @@ from app.schemas.user import UserUpdate
 
 
 class UserService:
-    def __init__(self, user_repo: UserRepository, role_repo: RoleRepository | None = None):
+    def __init__(self, user_repo: UserRepository, role_repo: RoleRepository):
         self.user_repo = user_repo
-        self.role_repo = role_repo or RoleRepository(user_repo.db)
+        self.role_repo = role_repo
 
     def get_all(self, skip: int = 0, limit: int = 100) -> list[User]:
         return self.user_repo.get_all(skip, limit)

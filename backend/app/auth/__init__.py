@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -8,9 +8,9 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
-from app.exceptions import UnauthorizedException, ForbiddenException
+from app.exceptions import ForbiddenException, UnauthorizedException
 from app.models.user import User
-from app.models.role import Permission
+from app.repositories.role_repository import PermissionRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import TokenData
 
@@ -63,19 +63,18 @@ def get_current_user(
 
 def require_permission(codename: str):
     def checker(
-        user: User = Depends(get_current_user), db: Session = Depends(get_db)
+        user: User = Depends(get_current_user),
+        db: Session = Depends(get_db),
     ) -> User:
         if user.is_superuser:
             return user
-        perm = (
-            db.query(Permission)
-            .filter(Permission.codename == codename)
-            .first()
-        )
+        perm_repo = PermissionRepository(db)
+        perm = perm_repo.get_by_codename(codename)
         if perm is None:
             raise ForbiddenException("Permission not found")
         for role in user.roles:
             if perm in role.permissions:
                 return user
         raise ForbiddenException("Not enough permissions")
+
     return checker

@@ -1,13 +1,13 @@
 import logging
 from datetime import UTC, datetime
 
+from app.auth.authorization import is_admin
 from app.exceptions import (
     ConflictException,
     ForbiddenException,
     NotFoundException,
 )
 from app.models.conversation import Conversation, Message
-from app.models.contact import Contact
 from app.models.user import User
 from app.providers.whatsapp import WhatsAppError, WhatsAppProvider
 from app.repositories.conversation_repository import (
@@ -17,13 +17,12 @@ from app.repositories.conversation_repository import (
 from app.repositories.whatsapp_account_repository import WhatsAppAccountRepository
 from app.schemas.conversation import (
     ConversationCreate,
-    ConversationRead,
     ConversationDetail,
+    ConversationRead,
     ConversationUpdate,
     MessageCreate,
     MessageRead,
 )
-
 
 log = logging.getLogger(__name__)
 
@@ -33,20 +32,11 @@ class ConversationService:
         self,
         conv_repo: ConversationRepository,
         msg_repo: MessageRepository,
-        wa_account_repo: WhatsAppAccountRepository | None = None,
+        wa_account_repo: WhatsAppAccountRepository,
     ):
         self.conv_repo = conv_repo
         self.msg_repo = msg_repo
         self.wa_account_repo = wa_account_repo
-
-    def _is_admin(self, user: User) -> bool:
-        return user.is_superuser or any(r.name == "admin" for r in user.roles)
-
-    def _get_contact(self, contact_id: int) -> Contact:
-        contact = self.conv_repo.db.query(Contact).filter(Contact.id == contact_id).first()
-        if not contact:
-            raise NotFoundException("Contact not found")
-        return contact
 
     def _build_conversation_read(
         self, conv: Conversation
@@ -76,7 +66,7 @@ class ConversationService:
         status: str | None = None,
         search: str | None = None,
     ) -> list[ConversationRead]:
-        agent_id = None if self._is_admin(current_user) else current_user.id
+        agent_id = None if is_admin(current_user) else current_user.id
         conversations = self.conv_repo.get_all(
             skip, limit, agent_id=agent_id, status=status, search=search
         )
@@ -88,7 +78,7 @@ class ConversationService:
         status: str | None = None,
         search: str | None = None,
     ) -> dict:
-        agent_id = None if self._is_admin(current_user) else current_user.id
+        agent_id = None if is_admin(current_user) else current_user.id
         total = self.conv_repo.count_all(agent_id=agent_id, status=status, search=search)
         return {"count": total}
 
@@ -96,7 +86,7 @@ class ConversationService:
         conv = self.conv_repo.get_by_id(conversation_id)
         if not conv:
             raise NotFoundException("Conversation not found")
-        if not self._is_admin(current_user) and conv.assigned_agent_id != current_user.id:
+        if not is_admin(current_user) and conv.assigned_agent_id != current_user.id:
             raise ForbiddenException("You can only view your own conversations")
         return ConversationDetail(
             id=conv.id,
@@ -110,7 +100,9 @@ class ConversationService:
         )
 
     def create(self, data: ConversationCreate, current_user: User) -> ConversationRead:
-        contact = self._get_contact(data.contact_id)
+        contact = self.conv_repo.get_contact_by_id(data.contact_id)
+        if not contact:
+            raise NotFoundException("Contact not found")
         existing = self.conv_repo.get_by_contact(data.contact_id)
         if existing:
             raise ConflictException("A conversation with this contact already exists")
@@ -132,7 +124,7 @@ class ConversationService:
         conv = self.conv_repo.get_by_id(conversation_id)
         if not conv:
             raise NotFoundException("Conversation not found")
-        if not self._is_admin(current_user) and conv.assigned_agent_id != current_user.id:
+        if not is_admin(current_user) and conv.assigned_agent_id != current_user.id:
             raise ForbiddenException("You can only modify your own conversations")
         conv.status = status
         conv = self.conv_repo.save(conv)
@@ -144,7 +136,7 @@ class ConversationService:
         conv = self.conv_repo.get_by_id(conversation_id)
         if not conv:
             raise NotFoundException("Conversation not found")
-        if not self._is_admin(current_user) and conv.assigned_agent_id != current_user.id:
+        if not is_admin(current_user) and conv.assigned_agent_id != current_user.id:
             raise ForbiddenException("You can only modify your own conversations")
         if data.whatsapp_account_id is not None:
             conv.whatsapp_account_id = data.whatsapp_account_id
@@ -161,7 +153,7 @@ class ConversationService:
         conv = self.conv_repo.get_by_id(conversation_id)
         if not conv:
             raise NotFoundException("Conversation not found")
-        if not self._is_admin(current_user) and conv.assigned_agent_id != current_user.id:
+        if not is_admin(current_user) and conv.assigned_agent_id != current_user.id:
             raise ForbiddenException("You can only view your own conversations")
 
         messages = self.msg_repo.get_by_conversation(conversation_id, skip, limit)
@@ -191,7 +183,7 @@ class ConversationService:
         conv = self.conv_repo.get_by_id(conversation_id)
         if not conv:
             raise NotFoundException("Conversation not found")
-        if not self._is_admin(current_user) and conv.assigned_agent_id != current_user.id:
+        if not is_admin(current_user) and conv.assigned_agent_id != current_user.id:
             raise ForbiddenException("You can only send messages in your own conversations")
         if conv.status == "closed":
             raise ConflictException("Cannot send messages in a closed conversation")
@@ -206,11 +198,11 @@ class ConversationService:
         msg = self.msg_repo.create(msg)
 
         conv.contact.last_contacted_at = datetime.now(UTC)
-        self.conv_repo.db.commit()
 
         template_params = data.template_params
         whatsapp_status = self._send_via_whatsapp(conv, msg, template_params)
-        self.conv_repo.db.commit()
+
+        self.msg_repo.save(msg)
 
         return MessageRead(
             id=msg.id,
@@ -230,7 +222,7 @@ class ConversationService:
     def _send_via_whatsapp(
         self, conv: Conversation, msg: Message, template_params: list[str] | None = None
     ) -> str | None:
-        if not conv.whatsapp_account_id or not self.wa_account_repo:
+        if not conv.whatsapp_account_id:
             return None
         account = self.wa_account_repo.get_by_id(conv.whatsapp_account_id)
         if not account:
@@ -276,7 +268,8 @@ class ConversationService:
         conv = self.conv_repo.get_by_id(conversation_id)
         if not conv:
             raise NotFoundException("Conversation not found")
-        if not self._is_admin(current_user) and conv.assigned_agent_id != current_user.id:
+        if not is_admin(current_user) and conv.assigned_agent_id != current_user.id:
             raise ForbiddenException("Forbidden")
         updated = self.msg_repo.mark_all_as_read(conversation_id)
+        self.conv_repo._db.commit()
         return {"updated": updated}

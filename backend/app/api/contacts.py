@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
 
 from app.auth import require_permission
-from app.dependencies import get_contact_repo
+from app.dependencies import get_contact_service
 from app.models.user import User
 from app.schemas.contact import ContactAssign, ContactCreate, ContactRead, ContactUpdate
 from app.services.contact_service import ContactService
@@ -15,9 +15,8 @@ def list_contacts(
     limit: int = Query(100, ge=1, le=500),
     search: str | None = Query(None),
     current_user: User = Depends(require_permission("read_contact")),
-    contact_repo=Depends(get_contact_repo),
+    service: ContactService = Depends(get_contact_service),
 ):
-    service = ContactService(contact_repo)
     return service.get_all(current_user, skip, limit, search)
 
 
@@ -25,9 +24,8 @@ def list_contacts(
 def count_contacts(
     search: str | None = Query(None),
     current_user: User = Depends(require_permission("read_contact")),
-    contact_repo=Depends(get_contact_repo),
+    service: ContactService = Depends(get_contact_service),
 ):
-    service = ContactService(contact_repo)
     return {"count": service.count_all(current_user, search)}
 
 
@@ -35,9 +33,8 @@ def count_contacts(
 def create_contact(
     data: ContactCreate,
     _: User = Depends(require_permission("create_contact")),
-    contact_repo=Depends(get_contact_repo),
+    service: ContactService = Depends(get_contact_service),
 ):
-    service = ContactService(contact_repo)
     return service.create(data)
 
 
@@ -45,9 +42,8 @@ def create_contact(
 def read_contact(
     contact_id: int,
     current_user: User = Depends(require_permission("read_contact")),
-    contact_repo=Depends(get_contact_repo),
+    service: ContactService = Depends(get_contact_service),
 ):
-    service = ContactService(contact_repo)
     return service.get_by_id(contact_id, current_user)
 
 
@@ -56,9 +52,8 @@ def update_contact(
     contact_id: int,
     data: ContactUpdate,
     current_user: User = Depends(require_permission("update_contact")),
-    contact_repo=Depends(get_contact_repo),
+    service: ContactService = Depends(get_contact_service),
 ):
-    service = ContactService(contact_repo)
     return service.update(contact_id, data, current_user)
 
 
@@ -66,9 +61,8 @@ def update_contact(
 def delete_contact(
     contact_id: int,
     current_user: User = Depends(require_permission("delete_contact")),
-    contact_repo=Depends(get_contact_repo),
+    service: ContactService = Depends(get_contact_service),
 ):
-    service = ContactService(contact_repo)
     service.delete(contact_id, current_user)
 
 
@@ -77,17 +71,15 @@ def assign_agent(
     contact_id: int,
     data: ContactAssign,
     current_user: User = Depends(require_permission("update_contact")),
-    contact_repo=Depends(get_contact_repo),
+    service: ContactService = Depends(get_contact_service),
 ):
-    service = ContactService(contact_repo)
     return service.assign_agent(contact_id, data.agent_id, current_user)
 
 
 @router.get("/assignable-agents/list")
 def list_assignable_agents(
     _: User = Depends(require_permission("read_contact")),
-    contact_repo=Depends(get_contact_repo),
+    service: ContactService = Depends(get_contact_service),
 ):
-    service = ContactService(contact_repo)
     agents = service.get_assignable_agents()
     return [{"id": a.id, "name": a.name, "email": a.email} for a in agents]

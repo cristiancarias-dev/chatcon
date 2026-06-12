@@ -1,7 +1,6 @@
 import json
 
 from app.exceptions import NotFoundException
-from app.models.whatsapp_account import WhatsAppAccount
 from app.models.whatsapp_template import WhatsAppTemplate
 from app.providers.whatsapp import WhatsAppProvider
 from app.repositories.whatsapp_account_repository import WhatsAppAccountRepository
@@ -102,4 +101,4 @@ class WhatsAppTemplateService:
             provider.delete_template_by_name(t.name)
         except Exception:
             pass
-        self.template_repo.delete(template_id)
+        self.template_repo.delete_by_id(template_id)

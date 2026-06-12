@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.auth import get_current_user, require_permission
+from app.auth import require_permission
 from app.dependencies import get_permission_repo
 from app.models.user import User
 from app.schemas.role import PermissionRead

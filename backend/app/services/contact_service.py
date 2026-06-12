@@ -1,22 +1,25 @@
 from datetime import UTC, datetime
 
+from app.auth.authorization import is_admin
 from app.exceptions import ConflictException, ForbiddenException, NotFoundException
 from app.models.contact import Contact
 from app.models.user import User
 from app.repositories.contact_repository import ContactRepository
+from app.repositories.role_repository import RoleRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.contact import ContactCreate, ContactUpdate
 
 
 class ContactService:
     def __init__(
-        self, contact_repo: ContactRepository, user_repo: UserRepository | None = None
+        self,
+        contact_repo: ContactRepository,
+        user_repo: UserRepository,
+        role_repo: RoleRepository,
     ):
         self.contact_repo = contact_repo
-        self.user_repo = user_repo or UserRepository(contact_repo.db)
-
-    def _is_admin(self, user: User) -> bool:
-        return user.is_superuser or any(r.name == "admin" for r in user.roles)
+        self.user_repo = user_repo
+        self.role_repo = role_repo
 
     def get_all(
         self,
@@ -25,25 +28,23 @@ class ContactService:
         limit: int = 100,
         search: str | None = None,
     ) -> list[Contact]:
-        if self._is_admin(current_user):
+        if is_admin(current_user):
             return self.contact_repo.get_all(skip, limit, search=search)
         return self.contact_repo.get_all(
             skip, limit, agent_id=current_user.id, search=search
         )
 
     def count_all(self, current_user: User, search: str | None = None) -> int:
-        if self._is_admin(current_user):
+        if is_admin(current_user):
             return self.contact_repo.count_all(search=search)
-        return self.contact_repo.count_all(
-            agent_id=current_user.id, search=search
-        )
+        return self.contact_repo.count_all(agent_id=current_user.id, search=search)
 
     def get_by_id(self, contact_id: int, current_user: User) -> Contact:
         contact = self.contact_repo.get_by_id(contact_id)
         if not contact:
             raise NotFoundException("Contact not found")
         is_not_owner = contact.assigned_agent_id != current_user.id
-        if not self._is_admin(current_user) and is_not_owner:
+        if not is_admin(current_user) and is_not_owner:
             raise ForbiddenException("You can only view your own contacts")
         return contact
 
@@ -104,7 +105,7 @@ class ContactService:
     def assign_agent(
         self, contact_id: int, agent_id: int | None, current_user: User
     ) -> Contact:
-        if not self._is_admin(current_user):
+        if not is_admin(current_user):
             raise ForbiddenException("Only admins can assign agents")
         contact = self.contact_repo.get_by_id(contact_id)
         if not contact:
@@ -121,11 +122,7 @@ class ContactService:
         return self.contact_repo.save(contact)
 
     def get_assignable_agents(self) -> list[User]:
-        from app.models.role import Role
-
-        agent_role = (
-            self.contact_repo.db.query(Role).filter(Role.name == "agent").first()
-        )
+        agent_role = self.role_repo.get_by_name("agent")
         if not agent_role:
             return []
         return [u for u in agent_role.users if u.is_active]

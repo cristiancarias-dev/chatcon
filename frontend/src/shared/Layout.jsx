@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { request } from "./http";
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import Loading from "./Loading";
 
 const navItems = [
@@ -68,9 +68,7 @@ const navItems = [
 
 export default function Layout({ children }) {
   const location = useLocation();
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState(["Contacts"]);
 
@@ -80,26 +78,6 @@ export default function Layout({ children }) {
     );
   }
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-    request("/users/me")
-      .then(setUser)
-      .catch(() => {
-        localStorage.removeItem("token");
-        navigate("/login");
-      })
-      .finally(() => setLoading(false));
-  }, [navigate]);
-
-  function handleLogout() {
-    localStorage.removeItem("token");
-    navigate("/login");
-  }
-
   if (loading) return <Loading />;
 
   const canAccessAdmin =
@@ -107,7 +85,6 @@ export default function Layout({ children }) {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/60 lg:hidden"
@@ -115,13 +92,11 @@ export default function Layout({ children }) {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`chat-sidebar fixed inset-y-0 left-0 z-50 flex w-64 flex-col shadow-xl transition-transform duration-200 lg:static lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Brand */}
         <div className="flex h-16 items-center gap-3 border-b border-white/10 px-6">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white shadow-lg">
             C
@@ -129,7 +104,6 @@ export default function Layout({ children }) {
           <span className="text-lg font-bold text-white">ChatCon</span>
         </div>
 
-        {/* Search bar (WhatsApp style) */}
         <div className="relative px-3 py-3">
           <svg
             className="absolute left-6 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
@@ -148,7 +122,6 @@ export default function Layout({ children }) {
           />
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-1">
           {navItems.map((item) => {
             if (item.admin && !canAccessAdmin) return null;
@@ -222,7 +195,6 @@ export default function Layout({ children }) {
           })}
         </nav>
 
-        {/* User info & logout */}
         <div className="border-t border-white/10 p-3">
           <div className="flex items-center gap-3 rounded-xl bg-primary-900/30 p-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white shadow-md">
@@ -235,7 +207,7 @@ export default function Layout({ children }) {
               <p className="truncate text-xs text-gray-400">{user?.email}</p>
             </div>
             <button
-              onClick={handleLogout}
+              onClick={logout}
               className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
               title="Sign out"
             >
@@ -247,9 +219,7 @@ export default function Layout({ children }) {
         </div>
       </aside>
 
-      {/* Main content */}
       <div className="flex flex-1 flex-col min-w-0">
-        {/* Top bar (mobile) */}
         <header className="chat-header sticky top-0 z-30 flex h-16 items-center gap-4 px-4 shadow-md lg:hidden">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -262,7 +232,6 @@ export default function Layout({ children }) {
           <span className="text-lg font-bold text-white">ChatCon</span>
         </header>
 
-        {/* Page content */}
         <main className="flex-1 animate-fade-in">
           {children}
         </main>
