@@ -1,4 +1,5 @@
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.database import Base
@@ -16,7 +17,10 @@ class WhatsAppAccount(Base):
     api_version = Column(String(10), default="v22.0")
     is_active = Column(Boolean, default=True)
     default_template_name = Column(String(100), nullable=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+    company = relationship("Company", backref="whatsapp_accounts")

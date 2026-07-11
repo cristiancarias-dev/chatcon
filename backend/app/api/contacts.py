@@ -32,10 +32,10 @@ def count_contacts(
 @router.post("/", response_model=ContactRead, status_code=status.HTTP_201_CREATED)
 def create_contact(
     data: ContactCreate,
-    _: User = Depends(require_permission("create_contact")),
+    current_user: User = Depends(require_permission("create_contact")),
     service: ContactService = Depends(get_contact_service),
 ):
-    return service.create(data)
+    return service.create(data, current_user)
 
 
 @router.get("/{contact_id}", response_model=ContactRead)

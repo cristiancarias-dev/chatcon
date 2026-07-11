@@ -26,7 +26,7 @@ export default function UserCreate() {
     setError("");
     setSaving(true);
     try {
-      const user = await request("/auth/register", {
+      const user = await request("/users/", {
         method: "POST",
         body: JSON.stringify(form),
       });
@@ -49,7 +49,7 @@ export default function UserCreate() {
       {/* Header */}
       <div className="mb-6 animate-slide-up">
         <h1 className="text-2xl font-bold text-gray-900">New User</h1>
-        <p className="mt-1 text-sm text-gray-500">Add a new user to the platform.</p>
+        <p className="mt-1 text-sm text-gray-500">Add a new user to your company.</p>
       </div>
 
       <ErrorAlert message={error} />

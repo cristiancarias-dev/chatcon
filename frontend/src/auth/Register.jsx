@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { request } from "../shared/http";
+import { authService } from "../services/authService";
 import ErrorAlert from "../shared/ErrorAlert";
 
 export default function Register() {
   const navigate = useNavigate();
+  const [companyName, setCompanyName] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,9 +17,11 @@ export default function Register() {
     setError("");
     setLoading(true);
     try {
-      await request("/auth/register", {
-        method: "POST",
-        body: JSON.stringify({ email, password, name }),
+      await authService.registerCompany({
+        company_name: companyName,
+        email,
+        password,
+        name,
       });
       navigate("/login");
     } catch (err) {
@@ -43,7 +46,7 @@ export default function Register() {
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 text-2xl font-bold text-white shadow-xl ring-4 ring-primary-100">
             C
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Create account</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Create your company</h1>
           <p className="mt-1.5 text-gray-500">Get started with ChatCon</p>
         </div>
 
@@ -51,7 +54,18 @@ export default function Register() {
         <div className="rounded-2xl bg-white p-8 shadow-xl ring-1 ring-gray-200 border-l-4 border-primary-500">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Name</label>
+              <label className="block text-sm font-medium text-gray-700">Company Name</label>
+              <input
+                type="text"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                required
+                className="input-field mt-1.5"
+                placeholder="My Company"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Your Name</label>
               <input
                 type="text"
                 value={name}
@@ -98,7 +112,7 @@ export default function Register() {
                   </svg>
                   Creating account...
                 </span>
-              ) : "Create account"}
+              ) : "Create company account"}
             </button>
           </form>
         </div>

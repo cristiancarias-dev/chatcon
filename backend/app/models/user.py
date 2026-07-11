@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, DateTime, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -15,6 +15,8 @@ class User(Base):
     name = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True)
     is_superuser = Column(Boolean, default=False)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     roles = relationship("Role", secondary=user_roles, back_populates="users")
+    company = relationship("Company", back_populates="users")

@@ -1,4 +1,5 @@
 from app.auth import hash_password
+from app.models.company import Company
 from app.models.role import Permission, Role
 from app.models.user import User
 
@@ -20,6 +21,8 @@ PERMISSIONS_DATA = [
     ("update_conversation", "Update conversations"),
     ("send_message", "Send messages in conversations"),
     ("manage_whatsapp_accounts", "Manage WhatsApp accounts"),
+    ("read_company", "View company information"),
+    ("update_company", "Update company information"),
 ]
 
 AGENT_PERMS = [
@@ -61,12 +64,17 @@ def seed_database(db, admin_email: str = "admin@prueba.com"):
     agent_role.permissions = [perm_objects[c] for c in AGENT_PERMS]
     db.flush()
 
+    demo_company = Company(name="ChatCon Demo", email="demo@chatcon.com")
+    db.add(demo_company)
+    db.flush()
+
     admin_user = User(
         email=admin_email,
         hashed_password=hash_password("admin123"),
         name="Admin",
         is_active=True,
         is_superuser=True,
+        company_id=demo_company.id,
     )
     db.add(admin_user)
     db.flush()

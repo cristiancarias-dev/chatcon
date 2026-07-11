@@ -1,4 +1,5 @@
 from app.schemas.auth import LoginRequest
+from app.schemas.company import CompanyCreate, CompanyRead, CompanyUpdate
 from app.schemas.contact import ContactAssign, ContactCreate, ContactRead, ContactUpdate
 from app.schemas.role import (
     PermissionRead,
@@ -12,6 +13,9 @@ from app.schemas.user import Token, UserCreate, UserRead, UserUpdate, UserWithRo
 
 __all__ = [
     "LoginRequest",
+    "CompanyCreate",
+    "CompanyRead",
+    "CompanyUpdate",
     "ContactAssign",
     "ContactCreate",
     "ContactRead",

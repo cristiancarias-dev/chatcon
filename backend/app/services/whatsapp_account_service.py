@@ -33,8 +33,8 @@ class WhatsAppAccountService:
             updated_at=account.updated_at,
         )
 
-    def get_all(self) -> list[WhatsAppAccountRead]:
-        return [self._to_read(a) for a in self.repo.get_all()]
+    def get_all(self, company_id: int | None = None) -> list[WhatsAppAccountRead]:
+        return [self._to_read(a) for a in self.repo.get_all(company_id=company_id)]
 
     def get_by_id(self, account_id: int) -> WhatsAppAccountRead:
         account = self.repo.get_by_id(account_id)
@@ -42,7 +42,7 @@ class WhatsAppAccountService:
             raise NotFoundException("WhatsApp account not found")
         return self._to_read(account)
 
-    def create(self, data: WhatsAppAccountCreate) -> WhatsAppAccountRead:
+    def create(self, data: WhatsAppAccountCreate, current_user) -> WhatsAppAccountRead:
         account = WhatsAppAccount(
             name=data.name,
             phone_number_id=data.phone_number_id,
@@ -52,6 +52,7 @@ class WhatsAppAccountService:
             api_version=data.api_version or "v22.0",
             is_active=data.is_active,
             default_template_name=data.default_template_name or None,
+            company_id=current_user.company_id,
         )
         account = self.repo.create(account)
         return self._to_read(account)

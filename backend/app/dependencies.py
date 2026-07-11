@@ -2,6 +2,7 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.repositories.company_repository import CompanyRepository
 from app.repositories.contact_repository import ContactRepository
 from app.repositories.conversation_repository import (
     ConversationRepository,
@@ -12,6 +13,7 @@ from app.repositories.user_repository import UserRepository
 from app.repositories.whatsapp_account_repository import WhatsAppAccountRepository
 from app.repositories.whatsapp_template_repository import WhatsAppTemplateRepository
 from app.services.auth_service import AuthService
+from app.services.company_service import CompanyService
 from app.services.contact_service import ContactService
 from app.services.conversation_service import ConversationService
 from app.services.role_service import RoleService
@@ -60,10 +62,17 @@ def get_wa_template_repo(db: Session = Depends(get_db)) -> WhatsAppTemplateRepos
     return WhatsAppTemplateRepository(db)
 
 
+def get_company_repo(db: Session = Depends(get_db)) -> CompanyRepository:
+    return CompanyRepository(db)
+
+
 # ── Services ──────────────────────────────────────────────────────────────────
 
-def get_auth_service(repo: UserRepository = Depends(get_user_repo)) -> AuthService:
-    return AuthService(repo)
+def get_auth_service(
+    user_repo: UserRepository = Depends(get_user_repo),
+    company_repo: CompanyRepository = Depends(get_company_repo),
+) -> AuthService:
+    return AuthService(user_repo, company_repo)
 
 
 def get_user_service(
@@ -107,3 +116,9 @@ def get_wa_template_service(
     account_repo: WhatsAppAccountRepository = Depends(get_wa_account_repo),
 ) -> WhatsAppTemplateService:
     return WhatsAppTemplateService(template_repo, account_repo)
+
+
+def get_company_service(
+    repo: CompanyRepository = Depends(get_company_repo),
+) -> CompanyService:
+    return CompanyService(repo)

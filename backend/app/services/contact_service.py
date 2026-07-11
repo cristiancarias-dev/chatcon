@@ -28,16 +28,18 @@ class ContactService:
         limit: int = 100,
         search: str | None = None,
     ) -> list[Contact]:
+        company_id = current_user.company_id
         if is_admin(current_user):
-            return self.contact_repo.get_all(skip, limit, search=search)
+            return self.contact_repo.get_all(skip, limit, search=search, company_id=company_id)
         return self.contact_repo.get_all(
-            skip, limit, agent_id=current_user.id, search=search
+            skip, limit, agent_id=current_user.id, search=search, company_id=company_id
         )
 
     def count_all(self, current_user: User, search: str | None = None) -> int:
+        company_id = current_user.company_id
         if is_admin(current_user):
-            return self.contact_repo.count_all(search=search)
-        return self.contact_repo.count_all(agent_id=current_user.id, search=search)
+            return self.contact_repo.count_all(search=search, company_id=company_id)
+        return self.contact_repo.count_all(agent_id=current_user.id, search=search, company_id=company_id)
 
     def get_by_id(self, contact_id: int, current_user: User) -> Contact:
         contact = self.contact_repo.get_by_id(contact_id)
@@ -48,7 +50,7 @@ class ContactService:
             raise ForbiddenException("You can only view your own contacts")
         return contact
 
-    def create(self, data: ContactCreate) -> Contact:
+    def create(self, data: ContactCreate, current_user: User) -> Contact:
         existing = self.contact_repo.get_by_phone(data.phone)
         if existing:
             raise ConflictException("A contact with this phone already exists")
@@ -58,6 +60,7 @@ class ContactService:
             email=data.email,
             notes=data.notes or "",
             assigned_agent_id=data.assigned_agent_id,
+            company_id=current_user.company_id,
         )
         if data.assigned_agent_id is not None:
             contact.assigned_at = datetime.now(UTC)

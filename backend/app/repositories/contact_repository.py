@@ -17,8 +17,11 @@ class ContactRepository(BaseRepository[Contact]):
         limit: int = 100,
         agent_id: int | None = None,
         search: str | None = None,
+        company_id: int | None = None,
     ) -> list[Contact]:
         q = self._db.query(Contact)
+        if company_id is not None:
+            q = q.filter(Contact.company_id == company_id)
         if agent_id is not None:
             q = q.filter(Contact.assigned_agent_id == agent_id)
         if search:
@@ -29,9 +32,11 @@ class ContactRepository(BaseRepository[Contact]):
         return q.order_by(Contact.created_at.desc()).offset(skip).limit(limit).all()
 
     def count_all(
-        self, agent_id: int | None = None, search: str | None = None
+        self, agent_id: int | None = None, search: str | None = None, company_id: int | None = None
     ) -> int:
         q = self._db.query(Contact)
+        if company_id is not None:
+            q = q.filter(Contact.company_id == company_id)
         if agent_id is not None:
             q = q.filter(Contact.assigned_agent_id == agent_id)
         if search:

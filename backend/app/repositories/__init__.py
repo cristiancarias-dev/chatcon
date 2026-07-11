@@ -1,3 +1,4 @@
+from app.repositories.company_repository import CompanyRepository
 from app.repositories.contact_repository import ContactRepository
 from app.repositories.conversation_repository import (
     ConversationRepository,
@@ -9,6 +10,7 @@ from app.repositories.whatsapp_account_repository import WhatsAppAccountReposito
 from app.repositories.whatsapp_template_repository import WhatsAppTemplateRepository
 
 __all__ = [
+    "CompanyRepository",
     "UserRepository",
     "RoleRepository",
     "PermissionRepository",

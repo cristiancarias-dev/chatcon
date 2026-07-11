@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, status
 from app.auth import get_current_user, require_permission
 from app.dependencies import get_user_service
 from app.models.user import User
-from app.schemas.user import UserRead, UserUpdate, UserWithRoles
+from app.schemas.user import UserCreate, UserRead, UserUpdate, UserWithRoles
 from app.services.user_service import UserService
 
 router = APIRouter()
@@ -28,9 +28,18 @@ def list_users(
     skip: int = 0,
     limit: int = 100,
     service: UserService = Depends(get_user_service),
-    _: User = Depends(require_permission("read_user")),
+    current_user: User = Depends(require_permission("read_user")),
 ):
-    return service.get_all(skip, limit)
+    return service.get_all(skip, limit, company_id=current_user.company_id)
+
+
+@router.post("/", response_model=UserWithRoles, status_code=status.HTTP_201_CREATED)
+def create_user(
+    data: UserCreate,
+    service: UserService = Depends(get_user_service),
+    current_user: User = Depends(require_permission("create_user")),
+):
+    return service.create(data, company_id=current_user.company_id)
 
 
 @router.get("/{user_id}", response_model=UserWithRoles)

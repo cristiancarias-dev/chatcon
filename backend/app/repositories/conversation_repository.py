@@ -20,14 +20,19 @@ class ConversationRepository(BaseRepository[Conversation]):
         agent_id: int | None = None,
         status: str | None = None,
         search: str | None = None,
+        company_id: int | None = None,
     ) -> list[Conversation]:
         q = self._db.query(Conversation)
+        if company_id is not None or search:
+            q = q.join(Contact, Conversation.contact_id == Contact.id)
+        if company_id is not None:
+            q = q.filter(Contact.company_id == company_id)
         if agent_id is not None:
             q = q.filter(Conversation.assigned_agent_id == agent_id)
         if status is not None:
             q = q.filter(Conversation.status == status)
         if search:
-            q = q.join(Contact).filter(
+            q = q.filter(
                 Contact.name.ilike(f"%{search}%") | Contact.phone.ilike(f"%{search}%")
             )
         return q.order_by(Conversation.updated_at.desc()).offset(skip).limit(limit).all()
@@ -37,20 +42,49 @@ class ConversationRepository(BaseRepository[Conversation]):
         agent_id: int | None = None,
         status: str | None = None,
         search: str | None = None,
+        company_id: int | None = None,
     ) -> int:
         q = self._db.query(func.count(Conversation.id))
+        if company_id is not None or search:
+            q = q.join(Contact, Conversation.contact_id == Contact.id)
+        if company_id is not None:
+            q = q.filter(Contact.company_id == company_id)
         if agent_id is not None:
             q = q.filter(Conversation.assigned_agent_id == agent_id)
         if status is not None:
             q = q.filter(Conversation.status == status)
         if search:
-            q = q.join(Contact).filter(
+            q = q.filter(
                 Contact.name.ilike(f"%{search}%") | Contact.phone.ilike(f"%{search}%")
             )
         return q.scalar()
 
     def get_contact_by_id(self, contact_id: int) -> Contact | None:
         return self._db.query(Contact).filter(Contact.id == contact_id).first()
+
+    def get_message_count(self, conversation_id: int) -> int:
+        return self._db.query(func.count(Message.id)).filter(
+            Message.conversation_id == conversation_id
+        ).scalar()
+
+    def get_unread_count(self, conversation_id: int) -> int:
+        return self._db.query(func.count(Message.id)).filter(
+            Message.conversation_id == conversation_id,
+            Message.is_read == False,
+            Message.sender_type == "contact",
+        ).scalar()
+
+    def get_message_count(self, conversation_id: int) -> int:
+        return self._db.query(func.count(Message.id)).filter(
+            Message.conversation_id == conversation_id
+        ).scalar()
+
+    def get_unread_count(self, conversation_id: int) -> int:
+        return self._db.query(func.count(Message.id)).filter(
+            Message.conversation_id == conversation_id,
+            Message.is_read == False,
+            Message.sender_type == "contact",
+        ).scalar()
 
 
 class MessageRepository(BaseRepository[Message]):

@@ -9,11 +9,39 @@ export interface Token {
   token_type: string;
 }
 
+// ── Company ───────────────────────────────────────────────────────────────────
+export interface CompanyCreate {
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+}
+
+export interface CompanyUpdate {
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  is_active?: boolean | null;
+}
+
+export interface CompanyRead {
+  id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // ── User ──────────────────────────────────────────────────────────────────────
 export interface UserCreate {
   email: string;
   password: string;
   name: string;
+  company_id?: number | null;
 }
 
 export interface UserUpdate {
@@ -22,6 +50,7 @@ export interface UserUpdate {
   is_active?: boolean | null;
   is_superuser?: boolean | null;
   password?: string | null;
+  company_id?: number | null;
 }
 
 export interface RoleRef {
@@ -30,17 +59,24 @@ export interface RoleRef {
   description: string;
 }
 
+export interface CompanyRef {
+  id: number;
+  name: string;
+}
+
 export interface UserRead {
   id: number;
   email: string;
   name: string;
   is_active: boolean;
   is_superuser: boolean;
+  company_id: number | null;
   created_at: string;
 }
 
 export interface UserWithRoles extends UserRead {
   roles: RoleRef[];
+  company: CompanyRef | null;
 }
 
 // ── Role / Permission ─────────────────────────────────────────────────────────

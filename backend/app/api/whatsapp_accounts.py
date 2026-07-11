@@ -19,7 +19,7 @@ def list_accounts(
     current_user: User = Depends(require_permission("manage_whatsapp_accounts")),
     service: WhatsAppAccountService = Depends(get_wa_account_service),
 ):
-    return service.get_all()
+    return service.get_all(company_id=current_user.company_id)
 
 
 @router.post("/", response_model=WhatsAppAccountRead, status_code=201)
@@ -28,7 +28,7 @@ def create_account(
     current_user: User = Depends(require_permission("manage_whatsapp_accounts")),
     service: WhatsAppAccountService = Depends(get_wa_account_service),
 ):
-    return service.create(data)
+    return service.create(data, current_user)
 
 
 @router.get("/{account_id}", response_model=WhatsAppAccountRead)

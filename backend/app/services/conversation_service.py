@@ -67,8 +67,9 @@ class ConversationService:
         search: str | None = None,
     ) -> list[ConversationRead]:
         agent_id = None if is_admin(current_user) else current_user.id
+        company_id = current_user.company_id
         conversations = self.conv_repo.get_all(
-            skip, limit, agent_id=agent_id, status=status, search=search
+            skip, limit, agent_id=agent_id, status=status, search=search, company_id=company_id
         )
         return [self._build_conversation_read(c) for c in conversations]
 
@@ -79,7 +80,8 @@ class ConversationService:
         search: str | None = None,
     ) -> dict:
         agent_id = None if is_admin(current_user) else current_user.id
-        total = self.conv_repo.count_all(agent_id=agent_id, status=status, search=search)
+        company_id = current_user.company_id
+        total = self.conv_repo.count_all(agent_id=agent_id, status=status, search=search, company_id=company_id)
         return {"count": total}
 
     def get_by_id(self, conversation_id: int, current_user: User) -> ConversationDetail:

@@ -33,7 +33,7 @@ def import_csv(
     model: str,
     file: UploadFile = File(...),
     db=Depends(get_db),
-    _: User = Depends(require_permission("update_user")),
+    current_user: User = Depends(require_permission("update_user")),
 ):
     handler = HANDLERS.get(model)
     if not handler:
@@ -56,7 +56,7 @@ def import_csv(
 
     for row in rows:
         line = row.pop("_line")
-        result = handler.process_row(row, db)
+        result = handler.process_row(row, db, company_id=current_user.company_id)
         result["line"] = line
         results.append(result)
         if "created" in result:

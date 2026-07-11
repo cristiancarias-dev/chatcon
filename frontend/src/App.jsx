@@ -19,6 +19,7 @@ import WhatsAppAccountCreate from "./whatsapp-accounts/WhatsAppAccountCreate";
 import WhatsAppAccountEdit from "./whatsapp-accounts/WhatsAppAccountEdit";
 import WhatsAppTemplateList from "./whatsapp-accounts/WhatsAppTemplateList";
 import WhatsAppTemplateCreate from "./whatsapp-accounts/WhatsAppTemplateCreate";
+import CompanySettings from "./company/CompanySettings";
 import Layout from "./shared/Layout";
 
 function ProtectedLayout({ children }) {
@@ -157,6 +158,14 @@ export default function App() {
           element={
             <ProtectedLayout>
               <RoleEdit />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/settings/company"
+          element={
+            <ProtectedLayout>
+              <CompanySettings />
             </ProtectedLayout>
           }
         />

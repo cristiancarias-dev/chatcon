@@ -3,7 +3,7 @@ from app.exceptions import ConflictException, NotFoundException
 from app.models.user import User
 from app.repositories.role_repository import RoleRepository
 from app.repositories.user_repository import UserRepository
-from app.schemas.user import UserUpdate
+from app.schemas.user import UserCreate, UserUpdate
 
 
 class UserService:
@@ -11,8 +11,8 @@ class UserService:
         self.user_repo = user_repo
         self.role_repo = role_repo
 
-    def get_all(self, skip: int = 0, limit: int = 100) -> list[User]:
-        return self.user_repo.get_all(skip, limit)
+    def get_all(self, skip: int = 0, limit: int = 100, company_id: int | None = None) -> list[User]:
+        return self.user_repo.get_all(skip, limit, company_id=company_id)
 
     def get_by_id(self, user_id: int) -> User:
         user = self.user_repo.get_by_id(user_id)
@@ -22,6 +22,18 @@ class UserService:
 
     def get_by_email(self, email: str) -> User | None:
         return self.user_repo.get_by_email(email)
+
+    def create(self, data: UserCreate, company_id: int | None = None) -> User:
+        existing = self.user_repo.get_by_email(data.email)
+        if existing:
+            raise ConflictException("Email already registered")
+        user = User(
+            email=data.email,
+            hashed_password=hash_password(data.password),
+            name=data.name,
+            company_id=company_id,
+        )
+        return self.user_repo.create(user)
 
     def update(self, user_id: int, data: UserUpdate) -> User:
         user = self.get_by_id(user_id)

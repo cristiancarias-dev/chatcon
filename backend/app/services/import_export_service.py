@@ -42,7 +42,7 @@ class UserImportHandler(ImportHandler):
             ["Jane Smith", "jane@example.com", "secure_pass", "true", "false", "admin|user"],
         ]
 
-    def process_row(self, row: dict[str, str], db: Session) -> dict:
+    def process_row(self, row: dict[str, str], db: Session, company_id: int | None = None) -> dict:
         user_repo = UserRepository(db)
         role_repo = RoleRepository(db)
 
@@ -70,6 +70,7 @@ class UserImportHandler(ImportHandler):
             hashed_password=hash_password(password),
             is_active=is_active,
             is_superuser=is_superuser,
+            company_id=company_id,
         )
 
         roles_str = row.get("roles", "").strip()

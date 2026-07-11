@@ -68,12 +68,16 @@ class WebhookService:
         if msg_type == "text":
             text = (msg_data.get("text") or {}).get("body", "")
 
+        account = self.wa_account_repo.get_by_id(account_id)
+        company_id = account.company_id if account else None
+
         contact = self.contact_repo.get_by_phone(from_number)
         if not contact:
             contact = Contact(
                 name=from_number,
                 phone=from_number,
                 notes="Auto-created from WhatsApp",
+                company_id=company_id,
             )
             contact = self.contact_repo.create(contact)
 
