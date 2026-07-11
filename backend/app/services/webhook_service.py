@@ -10,6 +10,7 @@ from app.repositories.conversation_repository import (
     MessageRepository,
 )
 from app.repositories.whatsapp_account_repository import WhatsAppAccountRepository
+from app.repositories.whatsapp_template_repository import WhatsAppTemplateRepository
 
 log = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ class WebhookService:
         self.conv_repo = ConversationRepository(db)
         self.msg_repo = MessageRepository(db)
         self.wa_account_repo = WhatsAppAccountRepository(db)
+        self.template_repo = WhatsAppTemplateRepository(db)
 
     def process_message(self, body: dict) -> None:
         entries = body.get("entry", [])
@@ -41,6 +43,7 @@ class WebhookService:
                 phone_number_id = metadata.get("phone_number_id", "")
                 account = self.wa_account_repo.get_by_phone_number_id(phone_number_id)
                 if not account:
+                    log.warning("No WhatsApp account found for phone_number_id=%s, entry skipped", phone_number_id)
                     continue
 
                 for msg_data in messages:
@@ -91,7 +94,7 @@ class WebhookService:
             conv = self.conv_repo.create(conv)
 
         last_msg = self.msg_repo.get_last_message(conv.id)
-        if last_msg and last_msg.sender_type == "contact" and last_msg.content == text:
+        if last_msg and last_msg.whatsapp_message_id == wa_msg_id:
             return
 
         msg = Message(
@@ -123,3 +126,21 @@ class WebhookService:
                     )
         if messages:
             self.msg_repo._db.commit()
+
+    def process_template_status(self, body: dict) -> None:
+        entries = body.get("entry", [])
+        for entry in entries:
+            changes = entry.get("changes", [])
+            for change in changes:
+                value = change.get("value", {})
+                event = value.get("event", "")
+                if event != "message_template_status_update":
+                    continue
+                template_data = value.get("message_template", {})
+                template_id = template_data.get("id", "")
+                status = template_data.get("status", "")
+                if template_id and status:
+                    t = self.template_repo.get_by_meta_id(template_id)
+                    if t:
+                        t.status = status
+                        self.template_repo.save(t)

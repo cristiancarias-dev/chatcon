@@ -29,6 +29,7 @@ async def receive_webhook(request: Request):
         service = WebhookService(db)
         service.process_message(body)
         service.process_statuses(body)
+        service.process_template_status(body)
     except Exception:
         log.exception("Error processing webhook")
     finally:

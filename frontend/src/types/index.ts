@@ -259,11 +259,37 @@ export interface WhatsAppAccountRead {
 }
 
 // ── WhatsApp Template ─────────────────────────────────────────────────────────
+export interface TemplateButton {
+  type: "QUICK_REPLY" | "URL" | "PHONE_NUMBER";
+  text: string;
+  url?: string;
+  phone_number?: string;
+}
+
+export interface TemplateComponent {
+  type: "HEADER" | "BODY" | "FOOTER" | "BUTTONS";
+  text?: string;
+  format?: "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT";
+  example?: {
+    header_handle?: string[];
+    body_text?: string[][];
+  };
+  buttons?: TemplateButton[];
+}
+
 export interface WhatsAppTemplateCreate {
   name: string;
   language?: string;
   category?: string;
-  components?: Record<string, any>[];
+  components?: TemplateComponent[];
+  allow_category_change?: boolean;
+}
+
+export interface WhatsAppTemplateUpdate {
+  language?: string;
+  category?: string;
+  components?: TemplateComponent[];
+  allow_category_change?: boolean;
 }
 
 export interface WhatsAppTemplateRead {
@@ -278,6 +304,81 @@ export interface WhatsAppTemplateRead {
   created_at: string;
   updated_at: string;
 }
+
+export const LANGUAGES: { code: string; name: string }[] = [
+  { code: "en_US", name: "English (US)" },
+  { code: "en", name: "English" },
+  { code: "en_GB", name: "English (UK)" },
+  { code: "es", name: "Spanish" },
+  { code: "es_MX", name: "Spanish (Mexico)" },
+  { code: "es_AR", name: "Spanish (Argentina)" },
+  { code: "pt_BR", name: "Portuguese (Brazil)" },
+  { code: "pt", name: "Portuguese" },
+  { code: "fr", name: "French" },
+  { code: "fr_CA", name: "French (Canada)" },
+  { code: "de", name: "German" },
+  { code: "it", name: "Italian" },
+  { code: "nl", name: "Dutch" },
+  { code: "ja", name: "Japanese" },
+  { code: "ko", name: "Korean" },
+  { code: "zh_CN", name: "Chinese (Simplified)" },
+  { code: "zh_TW", name: "Chinese (Traditional)" },
+  { code: "zh_HK", name: "Chinese (Hong Kong)" },
+  { code: "ar", name: "Arabic" },
+  { code: "he", name: "Hebrew" },
+  { code: "hi", name: "Hindi" },
+  { code: "bn", name: "Bengali" },
+  { code: "ta", name: "Tamil" },
+  { code: "te", name: "Telugu" },
+  { code: "ml", name: "Malayalam" },
+  { code: "kn", name: "Kannada" },
+  { code: "mr", name: "Marathi" },
+  { code: "gu", name: "Gujarati" },
+  { code: "pa", name: "Punjabi" },
+  { code: "ur", name: "Urdu" },
+  { code: "fa", name: "Persian" },
+  { code: "tr", name: "Turkish" },
+  { code: "ru", name: "Russian" },
+  { code: "uk", name: "Ukrainian" },
+  { code: "pl", name: "Polish" },
+  { code: "cs", name: "Czech" },
+  { code: "sk", name: "Slovak" },
+  { code: "hu", name: "Hungarian" },
+  { code: "ro", name: "Romanian" },
+  { code: "bg", name: "Bulgarian" },
+  { code: "hr", name: "Croatian" },
+  { code: "sl", name: "Slovenian" },
+  { code: "sr", name: "Serbian" },
+  { code: "el", name: "Greek" },
+  { code: "th", name: "Thai" },
+  { code: "vi", name: "Vietnamese" },
+  { code: "id", name: "Indonesian" },
+  { code: "ms", name: "Malay" },
+  { code: "fil", name: "Filipino" },
+  { code: "sw", name: "Swahili" },
+  { code: "am", name: "Amharic" },
+  { code: "nb", name: "Norwegian" },
+  { code: "da", name: "Danish" },
+  { code: "sv", name: "Swedish" },
+  { code: "fi", name: "Finnish" },
+  { code: "lv", name: "Latvian" },
+  { code: "lt", name: "Lithuanian" },
+  { code: "et", name: "Estonian" },
+  { code: "ca", name: "Catalan" },
+  { code: "eu", name: "Basque" },
+  { code: "gl", name: "Galician" },
+];
+
+export const TEMPLATE_CATEGORIES = ["MARKETING", "UTILITY", "AUTHENTICATION"] as const;
+
+export const TEMPLATE_STATUSES = [
+  "APPROVED",
+  "REJECTED",
+  "PENDING",
+  "DELETED",
+  "PAUSED",
+  "LIMITED",
+] as const;
 
 // ── Utility ───────────────────────────────────────────────────────────────────
 export interface PaginationParams {

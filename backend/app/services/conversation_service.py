@@ -15,6 +15,7 @@ from app.repositories.conversation_repository import (
     MessageRepository,
 )
 from app.repositories.whatsapp_account_repository import WhatsAppAccountRepository
+from app.repositories.whatsapp_template_repository import WhatsAppTemplateRepository
 from app.schemas.conversation import (
     ConversationCreate,
     ConversationDetail,
@@ -33,10 +34,12 @@ class ConversationService:
         conv_repo: ConversationRepository,
         msg_repo: MessageRepository,
         wa_account_repo: WhatsAppAccountRepository,
+        template_repo: WhatsAppTemplateRepository,
     ):
         self.conv_repo = conv_repo
         self.msg_repo = msg_repo
         self.wa_account_repo = wa_account_repo
+        self.template_repo = template_repo
 
     def _build_conversation_read(
         self, conv: Conversation
@@ -236,14 +239,18 @@ class ConversationService:
             to = conv.contact.phone
 
             if msg.message_type == "template" and msg.template_name:
-                resp = provider.send_template(to, msg.template_name, template_params)
+                template = self.template_repo.get_by_name(account.id, msg.template_name)
+                language = template.language if template else "en_US"
+                resp = provider.send_template(to, msg.template_name, language, template_params)
             else:
                 try:
                     resp = provider.send_text(to, msg.content)
                 except WhatsAppError as e:
                     if e.code == 131047 and account.default_template_name:
                         log.warning("131047 fallback to template %s", account.default_template_name)
-                        resp = provider.send_template(to, account.default_template_name)
+                        fallback_template = self.template_repo.get_by_name(account.id, account.default_template_name)
+                        fallback_language = fallback_template.language if fallback_template else "en_US"
+                        resp = provider.send_template(to, account.default_template_name, fallback_language)
                         msg.message_type = "template"
                         msg.template_name = account.default_template_name
                     else:

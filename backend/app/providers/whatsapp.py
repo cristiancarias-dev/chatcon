@@ -44,7 +44,20 @@ class WhatsAppProvider:
                 resp = client.get(url, headers=self._headers(), params=payload)
             else:
                 resp = client.request(method, url, json=payload, headers=self._headers())
-            data = resp.json()
+            try:
+                data = resp.json()
+            except Exception:
+                resp.raise_for_status()
+                raise WhatsAppError(resp.status_code, "Invalid response from Meta API")
+
+            meta_error = data.get("error")
+            if meta_error and isinstance(meta_error, dict):
+                code = meta_error.get("code", resp.status_code)
+                title = meta_error.get("message", "Unknown error")
+                error_subcode = meta_error.get("error_subcode", "")
+                details = meta_error.get("fbtrace_id", "")
+                raise WhatsAppError(code, title, details)
+
             errors = data.get("errors")
             if errors:
                 err = errors[0]
@@ -52,7 +65,10 @@ class WhatsAppProvider:
                 title = err.get("title", "Unknown error")
                 details = (err.get("error_data") or {}).get("details", "")
                 raise WhatsAppError(code, title, details)
-            resp.raise_for_status()
+
+            if resp.status_code >= 400:
+                raise WhatsAppError(resp.status_code, f"HTTP {resp.status_code}", url)
+
             return data
 
     def _post(self, payload: dict) -> dict:
@@ -70,7 +86,7 @@ class WhatsAppProvider:
         return self._post(payload)
 
     def send_template(
-        self, to: str, template_name: str, body_params: list[str] | None = None
+        self, to: str, template_name: str, language: str, body_params: list[str] | None = None
     ) -> dict:
         components = []
         if body_params:
@@ -86,7 +102,7 @@ class WhatsAppProvider:
             "type": "template",
             "template": {
                 "name": template_name,
-                "language": {"code": "en"},
+                "language": {"code": language},
                 "components": components,
             },
         }
@@ -104,7 +120,7 @@ class WhatsAppProvider:
         data = self._request("GET", url, {"name": name})
         return data.get("data", [])
 
-    def create_template(self, name: str, language: str, category: str, components: list) -> dict:
+    def create_template(self, name: str, language: str, category: str, components: list, allow_category_change: bool = True) -> dict:
         url = self._waba_url("message_templates")
         payload = {
             "name": name,
@@ -112,6 +128,23 @@ class WhatsAppProvider:
             "category": category,
             "components": components,
         }
+        if not allow_category_change:
+            payload["allow_category_change"] = False
+        return self._request("POST", url, payload)
+
+    def get_template_by_id(self, template_id: str) -> dict:
+        url = f"{META_API_BASE}/{self.api_version}/{template_id}"
+        return self._request("GET", url, {"fields": "name,status,category,components"})
+
+    def edit_template(self, template_id: str, language: str, category: str, components: list, allow_category_change: bool = True) -> dict:
+        url = f"{META_API_BASE}/{self.api_version}/{template_id}"
+        payload = {
+            "language": language,
+            "category": category,
+            "components": components,
+        }
+        if not allow_category_change:
+            payload["allow_category_change"] = False
         return self._request("POST", url, payload)
 
     def delete_template_by_name(self, name: str) -> dict:

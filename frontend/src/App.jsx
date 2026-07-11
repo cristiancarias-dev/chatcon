@@ -19,6 +19,7 @@ import WhatsAppAccountCreate from "./whatsapp-accounts/WhatsAppAccountCreate";
 import WhatsAppAccountEdit from "./whatsapp-accounts/WhatsAppAccountEdit";
 import WhatsAppTemplateList from "./whatsapp-accounts/WhatsAppTemplateList";
 import WhatsAppTemplateCreate from "./whatsapp-accounts/WhatsAppTemplateCreate";
+import WhatsAppTemplateEdit from "./whatsapp-accounts/WhatsAppTemplateEdit";
 import CompanySettings from "./company/CompanySettings";
 import Layout from "./shared/Layout";
 
@@ -134,6 +135,14 @@ export default function App() {
           element={
             <ProtectedLayout>
               <WhatsAppTemplateCreate />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/whatsapp-accounts/:id/templates/:templateId/edit"
+          element={
+            <ProtectedLayout>
+              <WhatsAppTemplateEdit />
             </ProtectedLayout>
           }
         />

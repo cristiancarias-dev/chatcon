@@ -43,11 +43,26 @@ export function refreshTemplates(accountId) {
   return request(`/whatsapp-templates/accounts/${accountId}/templates/refresh`, { method: "POST" });
 }
 
+export function syncTemplates(accountId) {
+  return request(`/whatsapp-templates/accounts/${accountId}/templates/sync`, { method: "POST" });
+}
+
 export function createTemplate(accountId, data) {
   return request(`/whatsapp-templates/accounts/${accountId}/templates`, {
     method: "POST",
     body: JSON.stringify(data),
   });
+}
+
+export function updateTemplate(accountId, templateId, data) {
+  return request(`/whatsapp-templates/accounts/${accountId}/templates/${templateId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function getTemplate(accountId, templateId) {
+  return request(`/whatsapp-templates/accounts/${accountId}/templates/${templateId}`);
 }
 
 export function deleteTemplate(accountId, templateId) {

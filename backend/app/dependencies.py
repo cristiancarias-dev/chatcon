@@ -101,8 +101,9 @@ def get_conversation_service(
     conv_repo: ConversationRepository = Depends(get_conv_repo),
     msg_repo: MessageRepository = Depends(get_msg_repo),
     wa_account_repo: WhatsAppAccountRepository = Depends(get_wa_account_repo),
+    template_repo: WhatsAppTemplateRepository = Depends(get_wa_template_repo),
 ) -> ConversationService:
-    return ConversationService(conv_repo, msg_repo, wa_account_repo)
+    return ConversationService(conv_repo, msg_repo, wa_account_repo, template_repo)
 
 
 def get_wa_account_service(

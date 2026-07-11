@@ -26,6 +26,13 @@ class WhatsAppTemplateRepository(BaseRepository[WhatsAppTemplate]):
             .first()
         )
 
+    def get_by_meta_id(self, meta_template_id: str) -> WhatsAppTemplate | None:
+        return (
+            self._db.query(WhatsAppTemplate)
+            .filter(WhatsAppTemplate.meta_template_id == meta_template_id)
+            .first()
+        )
+
     def delete_by_id(self, template_id: int) -> bool:
         template = self.get_by_id(template_id)
         if not template:

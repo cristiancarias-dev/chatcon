@@ -1,10 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { useCreateTemplate } from "../hooks/useWhatsAppTemplates";
+import { useWhatsAppTemplate, useUpdateTemplate } from "../hooks/useWhatsAppTemplates";
 import { LANGUAGES, TEMPLATE_CATEGORIES } from "../types";
 import TemplatePreview from "./TemplatePreview";
-
-const EMPTY_BUTTON = { type: "QUICK_REPLY", text: "" };
 
 function extractVariableCount(text) {
   const matches = text.match(/\{\{(\d+)\}\}/g);
@@ -12,13 +10,54 @@ function extractVariableCount(text) {
   return Math.max(...matches.map((m) => parseInt(m.replace(/\D/g, ""))));
 }
 
-export default function WhatsAppTemplateCreate() {
-  const { id } = useParams();
+function parseComponents(componentsStr) {
+  try {
+    const components = JSON.parse(componentsStr || "[]");
+    if (!Array.isArray(components)) return { header: {}, body: "", footer: "", buttons: [] };
+
+    let header = {};
+    let body = "";
+    let bodyExamples = {};
+    let footer = "";
+    let buttons = [];
+
+    for (const comp of components) {
+      if (comp.type === "HEADER") {
+        header = comp;
+      } else if (comp.type === "BODY") {
+        body = comp.text || "";
+        if (comp.example?.body_text?.[0]) {
+          const examples = comp.example.body_text[0];
+          const count = extractVariableCount(body);
+          for (let i = 1; i <= count; i++) {
+            bodyExamples[i] = [examples[i - 1] || ""];
+          }
+        }
+      } else if (comp.type === "FOOTER") {
+        footer = comp.text || "";
+      } else if (comp.type === "BUTTONS" && comp.buttons) {
+        buttons = comp.buttons.map((b) => ({
+          type: b.type,
+          text: b.text || "",
+          url: b.example?.[0] || "",
+          phone_number: b.example || "",
+        }));
+      }
+    }
+
+    return { header, body, bodyExamples, footer, buttons };
+  } catch {
+    return { header: {}, body: "", bodyExamples: {}, footer: "", buttons: [] };
+  }
+}
+
+export default function WhatsAppTemplateEdit() {
+  const { id, templateId } = useParams();
   const navigate = useNavigate();
-  const createMutation = useCreateTemplate();
+  const { data: template, isLoading } = useWhatsAppTemplate(parseInt(id), parseInt(templateId));
+  const updateMutation = useUpdateTemplate();
 
   const [form, setForm] = useState({
-    name: "",
     language: "en_US",
     category: "MARKETING",
     allow_category_change: true,
@@ -34,6 +73,24 @@ export default function WhatsAppTemplateCreate() {
 
   const varCount = useMemo(() => extractVariableCount(form.body), [form.body]);
 
+  useEffect(() => {
+    if (template) {
+      const parsed = parseComponents(template.components);
+      setForm({
+        language: template.language,
+        category: template.category,
+        allow_category_change: true,
+        headerFormat: parsed.header.format || "NONE",
+        headerText: parsed.header.text || "",
+        headerMediaUrl: parsed.header.example?.header_handle?.[0] || "",
+        body: parsed.body,
+        footer: parsed.footer,
+      });
+      setBodyExamples(parsed.bodyExamples);
+      setButtons(parsed.buttons);
+    }
+  }, [template]);
+
   function handleChange(field) {
     return (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
   }
@@ -48,7 +105,7 @@ export default function WhatsAppTemplateCreate() {
   }
 
   function addButton() {
-    setButtons((prev) => [...prev, { ...EMPTY_BUTTON }]);
+    setButtons((prev) => [...prev, { type: "QUICK_REPLY", text: "" }]);
   }
 
   function updateButton(index, field, value) {
@@ -115,14 +172,6 @@ export default function WhatsAppTemplateCreate() {
     e.preventDefault();
     setError("");
 
-    if (!form.name.trim()) {
-      setError("Template name is required");
-      return;
-    }
-    if (!/^[a-z0-9_]+$/.test(form.name)) {
-      setError("Template name can only contain lowercase letters, numbers, and underscores");
-      return;
-    }
     if (!form.body.trim()) {
       setError("Body text is required");
       return;
@@ -130,12 +179,35 @@ export default function WhatsAppTemplateCreate() {
 
     const components = buildComponents();
 
-    createMutation.mutate(
-      { accountId: parseInt(id), data: { ...form, components } },
+    updateMutation.mutate(
+      {
+        accountId: parseInt(id),
+        templateId: parseInt(templateId),
+        data: { ...form, components },
+      },
       {
         onSuccess: () => navigate(`/whatsapp-accounts/${id}/templates`),
-        onError: (err) => setError(err.message || "Failed to create template"),
+        onError: (err) => setError(err.message || "Failed to update template"),
       }
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600" />
+      </div>
+    );
+  }
+
+  if (!template) {
+    return (
+      <div className="p-6 text-center text-gray-500">
+        Template not found.
+        <Link to={`/whatsapp-accounts/${id}/templates`} className="ml-2 text-blue-600 hover:underline">
+          Go back
+        </Link>
+      </div>
     );
   }
 
@@ -151,8 +223,23 @@ export default function WhatsAppTemplateCreate() {
           </svg>
           Back to templates
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">New Template</h1>
-        <p className="mt-1 text-sm text-gray-500">Create a message template on Meta</p>
+        <h1 className="text-2xl font-bold text-gray-900">Edit Template: {template.name}</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Status:{" "}
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+              template.status === "APPROVED"
+                ? "bg-green-100 text-green-800"
+                : template.status === "REJECTED"
+                ? "bg-red-100 text-red-800"
+                : template.status === "PENDING"
+                ? "bg-yellow-100 text-yellow-800"
+                : "bg-gray-100 text-gray-800"
+            }`}
+          >
+            {template.status}
+          </span>
+        </p>
       </div>
 
       {error && (
@@ -167,13 +254,11 @@ export default function WhatsAppTemplateCreate() {
             <label className="block text-sm font-medium text-gray-700">Template Name</label>
             <input
               type="text"
-              value={form.name}
-              onChange={handleChange("name")}
-              required
-              placeholder="e.g. order_confirmation"
-              className="input-field mt-1 font-mono"
+              value={template.name}
+              disabled
+              className="input-field mt-1 font-mono bg-gray-50 cursor-not-allowed"
             />
-            <p className="mt-1 text-xs text-gray-400">Only lowercase letters, numbers, and underscores</p>
+            <p className="mt-1 text-xs text-gray-400">Name cannot be changed after creation</p>
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2">
@@ -349,8 +434,8 @@ export default function WhatsAppTemplateCreate() {
           </div>
 
           <div className="flex items-center gap-3 border-t border-gray-100 pt-6">
-            <button type="submit" disabled={createMutation.isPending} className="btn-primary">
-              {createMutation.isPending ? "Creating..." : "Create Template"}
+            <button type="submit" disabled={updateMutation.isPending} className="btn-primary">
+              {updateMutation.isPending ? "Saving..." : "Save Changes"}
             </button>
             <Link to={`/whatsapp-accounts/${id}/templates`} className="btn-secondary">
               Cancel
