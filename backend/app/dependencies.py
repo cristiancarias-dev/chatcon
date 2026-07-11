@@ -71,8 +71,9 @@ def get_company_repo(db: Session = Depends(get_db)) -> CompanyRepository:
 def get_auth_service(
     user_repo: UserRepository = Depends(get_user_repo),
     company_repo: CompanyRepository = Depends(get_company_repo),
+    role_repo: RoleRepository = Depends(get_role_repo),
 ) -> AuthService:
-    return AuthService(user_repo, company_repo)
+    return AuthService(user_repo, company_repo, role_repo)
 
 
 def get_user_service(

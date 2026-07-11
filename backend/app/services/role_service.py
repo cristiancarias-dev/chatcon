@@ -1,7 +1,9 @@
-from app.exceptions import ConflictException, NotFoundException
+from app.exceptions import ConflictException, ForbiddenException, NotFoundException
 from app.models.role import Role
 from app.repositories.role_repository import PermissionRepository, RoleRepository
 from app.schemas.role import RoleCreate, RoleUpdate
+
+BUILTIN_ROLES = {"admin", "user", "agent"}
 
 
 class RoleService:
@@ -27,6 +29,8 @@ class RoleService:
 
     def update(self, role_id: int, data: RoleUpdate) -> Role:
         role = self.get_by_id(role_id)
+        if role.name in BUILTIN_ROLES:
+            raise ForbiddenException("Cannot modify built-in roles")
         if data.name is not None:
             existing = self.role_repo.get_by_name(data.name)
             if existing and existing.id != role.id:
@@ -38,10 +42,14 @@ class RoleService:
 
     def delete(self, role_id: int) -> None:
         role = self.get_by_id(role_id)
+        if role.name in BUILTIN_ROLES:
+            raise ForbiddenException("Cannot delete built-in roles")
         self.role_repo.delete(role)
 
     def update_permissions(self, role_id: int, permission_ids: list[int]) -> Role:
         role = self.get_by_id(role_id)
+        if role.name in BUILTIN_ROLES:
+            raise ForbiddenException("Cannot modify built-in roles")
         permissions = self.perm_repo.get_by_ids(permission_ids)
         if len(permissions) != len(permission_ids):
             raise NotFoundException("One or more permissions not found")
