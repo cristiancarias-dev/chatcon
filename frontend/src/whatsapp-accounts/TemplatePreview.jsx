@@ -1,10 +1,23 @@
+const SYSTEM_VARS_PREVIEW = {
+  "{contact_name}": "John",
+  "{contact_phone}": "+1 234 567 890",
+  "{agent_name}": "Agent",
+  "{date}": new Date().toISOString().split("T")[0],
+  "{time}": new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+};
+
 function replaceVars(text, bodyExamples, varCount) {
-  if (!text || varCount === 0) return text;
+  if (!text) return text;
   let result = text;
-  for (let i = 1; i <= varCount; i++) {
-    const val = bodyExamples[i]?.[0] || `{{${i}}}`;
-    result = result.replace(new RegExp(`\\{\\{${i}\\}\\}`, "g"), val);
+  if (varCount > 0) {
+    for (let i = 1; i <= varCount; i++) {
+      const val = bodyExamples[i]?.[0] || `{{${i}}}`;
+      result = result.replace(new RegExp(`\\{\\{${i}\\}\\}`, "g"), val);
+    }
   }
+  Object.entries(SYSTEM_VARS_PREVIEW).forEach(([key, val]) => {
+    result = result.replaceAll(key, val);
+  });
   return result;
 }
 

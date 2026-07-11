@@ -213,6 +213,7 @@ export interface MessageRead {
   content: string;
   message_type: string;
   template_name: string | null;
+  template_params: string[] | null;
   is_read: boolean;
   whatsapp_status?: string | null;
   whatsapp_message_id: string | null;

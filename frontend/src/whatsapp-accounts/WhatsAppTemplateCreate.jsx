@@ -1,10 +1,18 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useCreateTemplate } from "../hooks/useWhatsAppTemplates";
 import { LANGUAGES, TEMPLATE_CATEGORIES } from "../types";
 import TemplatePreview from "./TemplatePreview";
 
 const EMPTY_BUTTON = { type: "QUICK_REPLY", text: "" };
+
+const SYSTEM_VARIABLES = [
+  { key: "{contact_name}", label: "Contact Name" },
+  { key: "{contact_phone}", label: "Contact Phone" },
+  { key: "{agent_name}", label: "Agent Name" },
+  { key: "{date}", label: "Date" },
+  { key: "{time}", label: "Time" },
+];
 
 function extractVariableCount(text) {
   const matches = text.match(/\{\{(\d+)\}\}/g);
@@ -31,6 +39,7 @@ export default function WhatsAppTemplateCreate() {
   const [bodyExamples, setBodyExamples] = useState({});
   const [buttons, setButtons] = useState([]);
   const [error, setError] = useState("");
+  const bodyRef = useRef(null);
 
   const varCount = useMemo(() => extractVariableCount(form.body), [form.body]);
 
@@ -57,6 +66,24 @@ export default function WhatsAppTemplateCreate() {
 
   function removeButton(index) {
     setButtons((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function insertSystemVariable(varKey) {
+    const textarea = bodyRef.current;
+    if (!textarea) {
+      setForm((prev) => ({ ...prev, body: prev.body + varKey }));
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const before = form.body.substring(0, start);
+    const after = form.body.substring(end);
+    const newBody = before + varKey + after;
+    setForm((prev) => ({ ...prev, body: newBody }));
+    setTimeout(() => {
+      textarea.focus();
+      textarea.selectionStart = textarea.selectionEnd = start + varKey.length;
+    }, 0);
   }
 
   function buildComponents() {
@@ -243,17 +270,32 @@ export default function WhatsAppTemplateCreate() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Body <span className="text-xs text-gray-400">(use &#123;&#123;1&#125;&#125; for variables)</span>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Body <span className="text-xs text-gray-400">(use &#123;&#123;1&#125;&#125; for Meta variables)</span>
             </label>
             <textarea
+              ref={bodyRef}
               value={form.body}
               onChange={handleChange("body")}
               required
               rows={4}
-              placeholder="Hi {{1}}, your order #{{2}} has been confirmed!"
-              className="input-field mt-1 font-mono"
+              placeholder="Hi {{1}}, your order is ready!"
+              className="input-field font-mono"
             />
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <span className="text-[10px] text-gray-400 self-center mr-1">System vars:</span>
+              {SYSTEM_VARIABLES.map((sv) => (
+                <button
+                  key={sv.key}
+                  type="button"
+                  onClick={() => insertSystemVariable(sv.key)}
+                  className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-colors"
+                  title={`Insert ${sv.label}`}
+                >
+                  {sv.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {varCount > 0 && (

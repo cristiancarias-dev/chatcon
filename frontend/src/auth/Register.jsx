@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { authService } from "../services/authService";
+import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import ErrorAlert from "../shared/ErrorAlert";
 
 export default function Register() {
-  const navigate = useNavigate();
+  const { register } = useAuth();
   const [companyName, setCompanyName] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -17,13 +17,12 @@ export default function Register() {
     setError("");
     setLoading(true);
     try {
-      await authService.registerCompany({
+      await register({
         company_name: companyName,
         email,
         password,
         name,
       });
-      navigate("/login");
     } catch (err) {
       setError(err.message);
     } finally {

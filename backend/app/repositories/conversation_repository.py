@@ -13,6 +13,16 @@ class ConversationRepository(BaseRepository[Conversation]):
     def get_by_contact(self, contact_id: int) -> Conversation | None:
         return self._db.query(Conversation).filter(Conversation.contact_id == contact_id).first()
 
+    def get_by_contact_and_account(self, contact_id: int, whatsapp_account_id: int) -> Conversation | None:
+        return (
+            self._db.query(Conversation)
+            .filter(
+                Conversation.contact_id == contact_id,
+                Conversation.whatsapp_account_id == whatsapp_account_id,
+            )
+            .first()
+        )
+
     def get_all(
         self,
         skip: int = 0,
@@ -107,6 +117,17 @@ class MessageRepository(BaseRepository[Message]):
         return (
             self._db.query(Message)
             .filter(Message.conversation_id == conversation_id)
+            .order_by(Message.created_at.desc())
+            .first()
+        )
+
+    def get_last_incoming_message(self, conversation_id: int) -> Message | None:
+        return (
+            self._db.query(Message)
+            .filter(
+                Message.conversation_id == conversation_id,
+                Message.sender_type == "contact",
+            )
             .order_by(Message.created_at.desc())
             .first()
         )

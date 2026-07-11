@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { authService } from "../services/authService";
+import { authService, type RegisterCompanyRequest } from "../services/authService";
 import { setOnUnauthorized } from "../services/http";
 import type { UserWithRoles } from "../types";
 
@@ -8,6 +8,7 @@ interface AuthContextType {
   user: UserWithRoles | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (data: RegisterCompanyRequest) => Promise<void>;
   logout: () => void;
 }
 
@@ -41,13 +42,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  async function login(email: string, password: string) {
+  const login = useCallback(async (email: string, password: string) => {
     const data = await authService.login({ email, password });
     if (!data) throw new Error("Login failed");
     localStorage.setItem("token", data.access_token);
     const me = await authService.getMe();
     setUser(me);
-  }
+    navigate("/dashboard");
+  }, [navigate]);
+
+  const register = useCallback(async (data: RegisterCompanyRequest) => {
+    await authService.registerCompany(data);
+    const tokenData = await authService.login({ email: data.email, password: data.password });
+    if (!tokenData) throw new Error("Auto-login failed");
+    localStorage.setItem("token", tokenData.access_token);
+    const me = await authService.getMe();
+    setUser(me);
+    navigate("/dashboard");
+  }, [navigate]);
 
   function logout() {
     localStorage.removeItem("token");
@@ -56,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

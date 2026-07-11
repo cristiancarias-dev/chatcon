@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import UTC, datetime
 
@@ -41,10 +42,39 @@ class ConversationService:
         self.wa_account_repo = wa_account_repo
         self.template_repo = template_repo
 
+    def _resolve_system_vars(self, text: str, conv: Conversation, user: User | None = None) -> str:
+        if not text:
+            return text
+        contact = conv.contact
+        replacements = {
+            "{contact_name}": contact.name or "",
+            "{contact_phone}": contact.phone or "",
+            "{agent_name}": user.name if user else "",
+            "{date}": datetime.now().strftime("%Y-%m-%d"),
+            "{time}": datetime.now().strftime("%H:%M"),
+        }
+        for key, val in replacements.items():
+            text = text.replace(key, val)
+        return text
+
+    def _get_template_body(self, template_name: str, account_id: int) -> str:
+        template = self.template_repo.get_by_name(account_id, template_name)
+        if not template or not template.components:
+            return ""
+        try:
+            comps = json.loads(template.components) if isinstance(template.components, str) else template.components
+            for c in comps:
+                if c.get("type") == "BODY":
+                    return c.get("text", "")
+        except (json.JSONDecodeError, TypeError):
+            pass
+        return ""
+
     def _build_conversation_read(
         self, conv: Conversation
     ) -> ConversationRead:
         last_msg = self.msg_repo.get_last_message(conv.id)
+        last_incoming = self.msg_repo.get_last_incoming_message(conv.id)
         return ConversationRead(
             id=conv.id,
             contact_id=conv.contact_id,
@@ -57,6 +87,7 @@ class ConversationService:
             unread_count=self.conv_repo.get_unread_count(conv.id),
             last_message=last_msg.content if last_msg else None,
             last_message_at=last_msg.created_at if last_msg else None,
+            last_incoming_at=last_incoming.created_at if last_incoming else None,
             created_at=conv.created_at,
             updated_at=conv.updated_at,
         )
@@ -199,10 +230,25 @@ class ConversationService:
             content=data.content,
             message_type=data.message_type or "text",
             template_name=data.template_name,
+            template_params=json.dumps(data.template_params) if data.template_params else None,
         )
         msg = self.msg_repo.create(msg)
 
         conv.contact.last_contacted_at = datetime.now(UTC)
+
+        if msg.message_type == "template" and msg.template_name:
+            account = self.wa_account_repo.get_by_id(conv.whatsapp_account_id) if conv.whatsapp_account_id else None
+            if account:
+                template_body = self._get_template_body(msg.template_name, account.id)
+                if template_body:
+                    resolved = self._resolve_system_vars(template_body, conv, current_user)
+                    if msg.template_params:
+                        for i, val in enumerate(msg.template_params):
+                            resolved = resolved.replace("{{" + str(i + 1) + "}}", val or "")
+                    else:
+                        import re
+                        resolved = re.sub(r"\{\{\d+\}\}", "", resolved)
+                    msg.content = resolved
 
         template_params = data.template_params
         whatsapp_status = self._send_via_whatsapp(conv, msg, template_params)
@@ -216,6 +262,7 @@ class ConversationService:
             content=msg.content,
             message_type=msg.message_type,
             template_name=msg.template_name,
+            template_params=json.loads(msg.template_params) if msg.template_params else None,
             is_read=msg.is_read,
             whatsapp_status=whatsapp_status,
             whatsapp_message_id=msg.whatsapp_message_id,

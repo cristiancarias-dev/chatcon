@@ -31,6 +31,7 @@ class MessageRead(BaseModel):
     content: str
     message_type: str
     template_name: str | None
+    template_params: list[str] | None = None
     is_read: bool
     whatsapp_status: str | None = None
     whatsapp_message_id: str | None = None
@@ -52,6 +53,7 @@ class ConversationRead(BaseModel):
     unread_count: int = 0
     last_message: str | None = None
     last_message_at: datetime | None = None
+    last_incoming_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
     model_config = {"from_attributes": True}

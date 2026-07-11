@@ -40,6 +40,7 @@ class Message(Base):
     content = Column(Text, nullable=False)
     message_type = Column(String(20), default="text")
     template_name = Column(String(100), nullable=True)
+    template_params = Column(Text, nullable=True)
     whatsapp_message_id = Column(String(255), nullable=True, index=True)
     whatsapp_error_code = Column(Integer, nullable=True)
     whatsapp_error_message = Column(Text, nullable=True)

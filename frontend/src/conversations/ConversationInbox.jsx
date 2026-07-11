@@ -10,8 +10,17 @@ import {
 } from "./useConversations";
 import { getActiveAccounts, getTemplates } from "../whatsapp-accounts/useWhatsAppAccounts";
 import { getContacts } from "../contacts/useContacts";
+import { useAuth } from "../context/AuthContext";
 import Loading from "../shared/Loading";
 import ErrorAlert from "../shared/ErrorAlert";
+
+const SYSTEM_VARIABLES = [
+  { key: "{contact_name}", label: "Contact Name", get: (conv) => conv.contact_name || "" },
+  { key: "{contact_phone}", label: "Contact Phone", get: (conv) => conv.contact_phone || "" },
+  { key: "{agent_name}", label: "Agent Name", get: (conv, user) => user?.name || "" },
+  { key: "{date}", label: "Current Date", get: () => new Date().toISOString().split("T")[0] },
+  { key: "{time}", label: "Current Time", get: () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
+];
 
 function formatTime(dateStr) {
   const d = new Date(dateStr);
@@ -88,6 +97,15 @@ export default function ConversationInbox() {
   const [availableTemplates, setAvailableTemplates] = useState([]);
   const [templateParams, setTemplateParams] = useState([]);
   const [templateParamCount, setTemplateParamCount] = useState(0);
+  const { user } = useAuth();
+
+  function isWithin24h(lastIncomingAt) {
+    if (!lastIncomingAt) return true;
+    const diff = Date.now() - new Date(lastIncomingAt).getTime();
+    return diff <= 24 * 60 * 60 * 1000;
+  }
+
+  const withinWindow = activeConv ? isWithin24h(activeConv.last_incoming_at) : true;
 
   function loadConversations() {
     setError("");
@@ -133,7 +151,7 @@ export default function ConversationInbox() {
     e.preventDefault();
     if ((!input.trim() && !selectedTemplate) || sending || !activeConv) return;
     const content = selectedTemplate
-      ? `[Template: ${selectedTemplate}] ${input.trim()}`
+      ? input.trim() || `[Template: ${selectedTemplate}]`
       : input.trim();
     if (!content) return;
     setSending(true);
@@ -599,62 +617,74 @@ export default function ConversationInbox() {
                   to send messages.
                 </p>
               ) : activeConv.whatsapp_account_id ? (
-                <form onSubmit={handleSend} className="flex items-end gap-2">
-                  <div className="relative flex-1">
-                    {selectedTemplate && (
-                      <div className="mb-1.5 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">
-                            Template: {selectedTemplate}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedTemplate(null);
-                                setShowTemplates(false);
-                              }}
-                              className="ml-1 text-primary-400 hover:text-primary-600"
-                            >
-                              &times;
-                            </button>
-                          </span>
-                        </div>
-                        {templateParams.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">
-                            {templateParams.map((val, i) => (
-                              <input
-                                key={i}
-                                type="text"
-                                value={val}
-                                onChange={(e) => {
-                                  const next = [...templateParams];
-                                  next[i] = e.target.value;
-                                  setTemplateParams(next);
+                <>
+                  {!withinWindow && (
+                    <div className="mb-3 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+                      <p className="text-xs text-amber-700 font-medium">
+                        24-hour window expired. Only template messages can be sent.
+                      </p>
+                    </div>
+                  )}
+                  <form onSubmit={handleSend} className="flex items-end gap-2">
+                    <div className="relative flex-1">
+                      {selectedTemplate && (
+                        <div className="mb-1.5 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1 rounded-lg bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">
+                              Template: {selectedTemplate}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedTemplate(null);
+                                  setShowTemplates(false);
+                                  setTemplateParams([]);
                                 }}
-                                placeholder={`Var {{${i + 1}}}`}
-                                className="w-28 rounded-lg border border-gray-200 px-2 py-1 text-xs outline-none focus:border-primary-400"
-                              />
-                            ))}
+                                className="ml-1 text-primary-400 hover:text-primary-600"
+                              >
+                                &times;
+                              </button>
+                            </span>
                           </div>
-                        )}
-                      </div>
-                    )}
-                    <textarea
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      placeholder={
-                        selectedTemplate
-                          ? "Add optional note to template..."
-                          : "Type a message..."
-                      }
-                      rows={1}
-                      className="input-field resize-none py-3 pr-12"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSend(e);
+                          {templateParams.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {templateParams.map((val, i) => (
+                                <input
+                                  key={i}
+                                  type="text"
+                                  value={val}
+                                  onChange={(e) => {
+                                    const next = [...templateParams];
+                                    next[i] = e.target.value;
+                                    setTemplateParams(next);
+                                  }}
+                                  placeholder={`Var {{${i + 1}}}`}
+                                  className="w-28 rounded-lg border border-gray-200 px-2 py-1 text-xs outline-none focus:border-primary-400"
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <textarea
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder={
+                          selectedTemplate
+                            ? "Add optional note to template..."
+                            : withinWindow
+                              ? "Type a message..."
+                              : "Only template messages allowed (24h window expired)"
                         }
-                      }}
-                    />
+                        disabled={!withinWindow && !selectedTemplate}
+                        rows={1}
+                        className="input-field resize-none py-3 pr-12"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSend(e);
+                          }
+                        }}
+                      />
                   </div>
                   <div className="relative">
                     <button
@@ -720,7 +750,7 @@ export default function ConversationInbox() {
                   </div>
                   <button
                     type="submit"
-                    disabled={(!input.trim() && !selectedTemplate) || sending}
+                    disabled={(!input.trim() && !selectedTemplate) || sending || (!withinWindow && !selectedTemplate)}
                     className="btn-primary rounded-xl px-4 py-3"
                   >
                     {sending ? (
@@ -735,6 +765,7 @@ export default function ConversationInbox() {
                     )}
                   </button>
                 </form>
+                </>
               ) : (
                 <div className="py-3 text-center">
                   <p className="text-sm text-gray-400 mb-2">

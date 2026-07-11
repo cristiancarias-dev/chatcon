@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { request } from "../shared/http";
+import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import ErrorAlert from "../shared/ErrorAlert";
 
 export default function Login() {
-  const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -15,12 +15,7 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      const data = await request("/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      });
-      localStorage.setItem("token", data.access_token);
-      navigate("/dashboard");
+      await login(email, password);
     } catch (err) {
       setError(err.message);
     } finally {

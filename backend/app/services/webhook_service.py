@@ -84,8 +84,8 @@ class WebhookService:
             )
             contact = self.contact_repo.create(contact)
 
-        conv = self.conv_repo.get_by_contact(contact.id)
-        if not conv or conv.whatsapp_account_id != account_id:
+        conv = self.conv_repo.get_by_contact_and_account(contact.id, account_id)
+        if not conv:
             conv = Conversation(
                 contact_id=contact.id,
                 whatsapp_account_id=account_id,
