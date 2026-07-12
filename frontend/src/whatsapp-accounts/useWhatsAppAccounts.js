@@ -27,8 +27,7 @@ export function deleteAccount(id) {
 }
 
 export async function getActiveAccounts() {
-  const all = await request("/whatsapp-accounts/");
-  return all.filter((a) => a.is_active);
+  return request("/whatsapp-accounts/active");
 }
 
 export function subscribeWebhook(id) {

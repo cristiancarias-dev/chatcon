@@ -36,6 +36,9 @@ class WhatsAppAccountService:
     def get_all(self, company_id: int | None = None) -> list[WhatsAppAccountRead]:
         return [self._to_read(a) for a in self.repo.get_all(company_id=company_id)]
 
+    def get_active(self, company_id: int | None = None) -> list[WhatsAppAccountRead]:
+        return [self._to_read(a) for a in self.repo.get_active(company_id=company_id)]
+
     def get_by_id(self, account_id: int) -> WhatsAppAccountRead:
         account = self.repo.get_by_id(account_id)
         if not account:

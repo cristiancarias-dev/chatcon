@@ -16,7 +16,7 @@ router = APIRouter()
 @router.get("/accounts/{account_id}/templates", response_model=list[WhatsAppTemplateRead])
 def list_templates(
     account_id: int,
-    current_user: User = Depends(require_permission("manage_whatsapp_accounts")),
+    current_user: User = Depends(require_permission("read_whatsapp_templates")),
     service: WhatsAppTemplateService = Depends(get_wa_template_service),
 ):
     return service.list_templates(account_id)
@@ -26,7 +26,7 @@ def list_templates(
 def get_template(
     account_id: int,
     template_id: int,
-    current_user: User = Depends(require_permission("manage_whatsapp_accounts")),
+    current_user: User = Depends(require_permission("read_whatsapp_templates")),
     service: WhatsAppTemplateService = Depends(get_wa_template_service),
 ):
     try:
