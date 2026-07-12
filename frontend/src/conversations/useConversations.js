@@ -60,3 +60,9 @@ export function updateConversation(id, data) {
     body: JSON.stringify(data),
   });
 }
+
+export function retryMessage(conversationId, messageId) {
+  return request(`/conversations/${conversationId}/messages/${messageId}/retry`, {
+    method: "POST",
+  });
+}

@@ -95,6 +95,16 @@ def send_message(
     return service.send_message(conversation_id, data, current_user)
 
 
+@router.post("/{conversation_id}/messages/{message_id}/retry")
+def retry_message(
+    conversation_id: int,
+    message_id: int,
+    current_user: User = Depends(require_permission("send_message")),
+    service: ConversationService = Depends(get_conversation_service),
+):
+    return service.retry_message(conversation_id, message_id, current_user)
+
+
 @router.post("/{conversation_id}/read")
 def mark_as_read(
     conversation_id: int,

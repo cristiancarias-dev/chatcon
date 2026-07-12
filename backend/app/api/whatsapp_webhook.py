@@ -30,6 +30,15 @@ async def receive_webhook(request: Request):
         service.process_message(body)
         service.process_statuses(body)
         service.process_template_status(body)
+
+        if service.broadcasts:
+            from app.api.websocket import manager
+            log.info("Broadcasting %d events via WS", len(service.broadcasts))
+            for event in service.broadcasts:
+                try:
+                    await manager.broadcast(event.conversation_id, event.payload)
+                except Exception:
+                    log.debug("Could not broadcast event via WS: %s", event.event_type)
     except Exception:
         log.exception("Error processing webhook")
     finally:

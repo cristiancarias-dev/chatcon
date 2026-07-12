@@ -11,6 +11,7 @@ from app.api.users import router as users_router
 from app.api.whatsapp_accounts import router as whatsapp_accounts_router
 from app.api.whatsapp_templates import router as whatsapp_templates_router
 from app.api.whatsapp_webhook import router as whatsapp_webhook_router
+from app.api.websocket import router as websocket_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router, prefix="/auth", tags=["auth"])
@@ -36,3 +37,4 @@ api_router.include_router(
     prefix="/whatsapp-templates",
     tags=["whatsapp-templates"],
 )
+api_router.include_router(websocket_router, tags=["websocket"])

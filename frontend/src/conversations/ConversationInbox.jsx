@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   getConversations,
   getMessages,
@@ -7,10 +7,12 @@ import {
   updateConversationStatus,
   updateConversation,
   markAsRead,
+  retryMessage,
 } from "./useConversations";
 import { getActiveAccounts, getTemplates } from "../whatsapp-accounts/useWhatsAppAccounts";
 import { getContacts } from "../contacts/useContacts";
 import { useAuth } from "../context/AuthContext";
+import { useWebSocket } from "../shared/useWebSocket";
 import Loading from "../shared/Loading";
 import ErrorAlert from "../shared/ErrorAlert";
 
@@ -35,7 +37,7 @@ function formatTime(dateStr) {
   return d.toLocaleDateString([], { day: "2-digit", month: "2-digit" });
 }
 
-function WhatsAppStatusIcon({ status, errorCode, errorMessage, onResendTemplate }) {
+function WhatsAppStatusIcon({ status, errorCode, errorMessage, onRetry, isRetrying }) {
   if (!status) return null;
   if (status === "sent") {
     return (
@@ -44,29 +46,59 @@ function WhatsAppStatusIcon({ status, errorCode, errorMessage, onResendTemplate 
       </svg>
     );
   }
-  if (status === "requires_template" || (errorCode === 131047)) {
+  if (status === "requires_template" || errorCode === 131047) {
     return (
       <div className="flex items-center gap-1">
-        <svg className="h-3.5 w-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-        </svg>
-        {onResendTemplate && (
+        <div className="group relative">
+          <svg className="h-3.5 w-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+          </svg>
+          {errorMessage && (
+            <span className="absolute bottom-full left-1/2 z-50 mb-1 hidden w-48 -translate-x-1/2 rounded-lg bg-gray-900 px-2 py-1 text-center text-[10px] text-white group-hover:block">
+              {errorMessage}
+            </span>
+          )}
+        </div>
+        {onRetry && (
           <button
-            onClick={onResendTemplate}
-            className="ml-1 rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-medium text-amber-600 hover:bg-amber-100"
-            title={errorMessage || "Re-engagement message - resend as template"}
+            onClick={onRetry}
+            disabled={isRetrying}
+            className="ml-1 rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-medium text-amber-600 hover:bg-amber-100 disabled:opacity-50"
+            title="Resend as template"
           >
-            Template
+            {isRetrying ? "..." : "Template"}
           </button>
         )}
       </div>
     );
   }
-  return (
-    <svg className="h-3.5 w-3.5 text-red-300" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-    </svg>
-  );
+  if (status === "error") {
+    return (
+      <div className="flex items-center gap-1">
+        <div className="group relative">
+          <svg className="h-3.5 w-3.5 text-red-400" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+          </svg>
+          {errorMessage && (
+            <span className="absolute bottom-full left-1/2 z-50 mb-1 hidden w-56 -translate-x-1/2 rounded-lg bg-gray-900 px-2 py-1 text-center text-[10px] text-white group-hover:block">
+              {errorMessage}
+            </span>
+          )}
+        </div>
+        {onRetry && (
+          <button
+            onClick={onRetry}
+            disabled={isRetrying}
+            className="ml-1 rounded bg-red-50 px-1.5 py-0.5 text-[9px] font-medium text-red-600 hover:bg-red-100 disabled:opacity-50"
+            title="Retry sending"
+          >
+            {isRetrying ? "..." : "Retry"}
+          </button>
+        )}
+      </div>
+    );
+  }
+  return null;
 }
 
 export default function ConversationInbox() {
@@ -93,6 +125,7 @@ export default function ConversationInbox() {
 
   const [showWASelector, setShowWASelector] = useState(false);
   const [waAccountsList, setWaAccountsList] = useState([]);
+  const [retryingMsgId, setRetryingMsgId] = useState(null);
   const [resendingMsgId, setResendingMsgId] = useState(null);
   const [availableTemplates, setAvailableTemplates] = useState([]);
   const [templateParams, setTemplateParams] = useState([]);
@@ -221,6 +254,37 @@ export default function ConversationInbox() {
       })
       .catch((err) => setError(err.message));
   }
+
+  function handleRetry(messageId) {
+    if (retryingMsgId || !activeConv) return;
+    setRetryingMsgId(messageId);
+    setError("");
+    retryMessage(activeConv.id, messageId)
+      .then((updated) => {
+        setMessages((prev) => prev.map((m) => (m.id === messageId ? updated : m)));
+        loadConversations();
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setRetryingMsgId(null));
+  }
+
+  const handleWsMessage = useCallback((msg) => {
+    if (activeConv && msg.conversation_id === activeConv.id) {
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
+    }
+    loadConversations();
+  }, [activeConv?.id]);
+
+  const handleWsStatus = useCallback((msgId, statusUpdate) => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === msgId ? { ...m, ...statusUpdate } : m))
+    );
+  }, []);
+
+  useWebSocket(activeConv?.id, { onMessage: handleWsMessage, onStatusUpdate: handleWsStatus });
 
   function openCreateModal() {
     setShowCreate(true);
@@ -577,11 +641,12 @@ export default function ConversationInbox() {
                                 status={msg.whatsapp_status}
                                 errorCode={msg.whatsapp_error_code}
                                 errorMessage={msg.whatsapp_error_message}
-                                onResendTemplate={
-                                  msg.whatsapp_error_code === 131047 || msg.whatsapp_status === "requires_template"
-                                    ? () => handleResendAsTemplate(msg)
+                                onRetry={
+                                  (msg.whatsapp_status === "error" || msg.whatsapp_status === "requires_template")
+                                    ? () => handleRetry(msg.id)
                                     : null
                                 }
+                                isRetrying={retryingMsgId === msg.id}
                               />
                               <svg
                                 className={`h-3.5 w-3.5 ${

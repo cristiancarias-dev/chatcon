@@ -202,6 +202,7 @@ class ConversationService:
                 message_type=m.message_type,
                 template_name=m.template_name,
                 is_read=m.is_read,
+                whatsapp_status=m.whatsapp_status,
                 whatsapp_message_id=m.whatsapp_message_id,
                 whatsapp_error_code=m.whatsapp_error_code,
                 whatsapp_error_message=m.whatsapp_error_message,
@@ -264,7 +265,49 @@ class ConversationService:
             template_name=msg.template_name,
             template_params=json.loads(msg.template_params) if msg.template_params else None,
             is_read=msg.is_read,
-            whatsapp_status=whatsapp_status,
+            whatsapp_status=msg.whatsapp_status,
+            whatsapp_message_id=msg.whatsapp_message_id,
+            whatsapp_error_code=msg.whatsapp_error_code,
+            whatsapp_error_message=msg.whatsapp_error_message,
+            created_at=msg.created_at,
+        )
+
+    def retry_message(
+        self, conversation_id: int, message_id: int, current_user: User
+    ) -> MessageRead:
+        conv = self.conv_repo.get_by_id(conversation_id)
+        if not conv:
+            raise NotFoundException("Conversation not found")
+        if not is_admin(current_user) and conv.assigned_agent_id != current_user.id:
+            raise ForbiddenException("You can only modify your own conversations")
+
+        msg = self.msg_repo.get_by_id(message_id)
+        if not msg or msg.conversation_id != conversation_id:
+            raise NotFoundException("Message not found")
+        if msg.sender_type != "agent":
+            raise ConflictException("Can only retry agent messages")
+        if msg.whatsapp_status not in ("error", "requires_template", "no_account", "inactive"):
+            raise ConflictException("Message is not in error state")
+
+        msg.whatsapp_status = None
+        msg.whatsapp_error_code = None
+        msg.whatsapp_error_message = None
+        msg.whatsapp_message_id = None
+
+        template_params = json.loads(msg.template_params) if msg.template_params else None
+        self._send_via_whatsapp(conv, msg, template_params)
+        self.msg_repo.save(msg)
+
+        return MessageRead(
+            id=msg.id,
+            conversation_id=msg.conversation_id,
+            sender_type=msg.sender_type,
+            content=msg.content,
+            message_type=msg.message_type,
+            template_name=msg.template_name,
+            template_params=template_params,
+            is_read=msg.is_read,
+            whatsapp_status=msg.whatsapp_status,
             whatsapp_message_id=msg.whatsapp_message_id,
             whatsapp_error_code=msg.whatsapp_error_code,
             whatsapp_error_message=msg.whatsapp_error_message,
@@ -275,11 +318,14 @@ class ConversationService:
         self, conv: Conversation, msg: Message, template_params: list[str] | None = None
     ) -> str | None:
         if not conv.whatsapp_account_id:
+            msg.whatsapp_status = None
             return None
         account = self.wa_account_repo.get_by_id(conv.whatsapp_account_id)
         if not account:
+            msg.whatsapp_status = "no_account"
             return "no_account"
         if not account.is_active:
+            msg.whatsapp_status = "inactive"
             return "inactive"
         try:
             provider = WhatsAppProvider(account)
@@ -306,18 +352,22 @@ class ConversationService:
             wam_ids = resp.get("messages", [])
             if wam_ids:
                 msg.whatsapp_message_id = wam_ids[0].get("id")
+            msg.whatsapp_status = "sent"
             return "sent"
 
         except WhatsAppError as e:
             log.error("WhatsApp send failed [%d]: %s", e.code, e.details)
+            msg.whatsapp_status = "error"
             msg.whatsapp_error_code = e.code
             msg.whatsapp_error_message = f"{e.title}: {e.details}" if e.details else e.title
             if e.code == 131047:
+                msg.whatsapp_status = "requires_template"
                 return "requires_template"
             return "error"
 
         except Exception as e:
             log.error("WhatsApp send failed: %s", e)
+            msg.whatsapp_status = "error"
             return "error"
 
     def mark_read(self, conversation_id: int, current_user: User) -> dict:
