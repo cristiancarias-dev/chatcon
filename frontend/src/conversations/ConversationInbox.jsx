@@ -41,7 +41,7 @@ function WhatsAppStatusIcon({ status, errorCode, errorMessage, onRetry, isRetryi
   if (!status) return null;
   if (status === "sent") {
     return (
-      <svg className="h-3.5 w-3.5 text-blue-300" viewBox="0 0 24 24" fill="currentColor">
+      <svg className="h-3.5 w-3.5 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
         <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
       </svg>
     );
@@ -50,7 +50,7 @@ function WhatsAppStatusIcon({ status, errorCode, errorMessage, onRetry, isRetryi
     return (
       <div className="flex items-center gap-1">
         <div className="group relative">
-          <svg className="h-3.5 w-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+          <svg className="h-3.5 w-3.5 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
           </svg>
           {errorMessage && (
@@ -76,7 +76,7 @@ function WhatsAppStatusIcon({ status, errorCode, errorMessage, onRetry, isRetryi
     return (
       <div className="flex items-center gap-1">
         <div className="group relative">
-          <svg className="h-3.5 w-3.5 text-red-400" viewBox="0 0 24 24" fill="currentColor">
+          <svg className="h-3.5 w-3.5 text-red-500" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
           </svg>
           {errorMessage && (
@@ -425,7 +425,7 @@ export default function ConversationInbox() {
                   }`}
                 >
                   <div className="relative flex-shrink-0">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white shadow-sm">
+                    <div className="avatar h-12 w-12 text-sm">
                       {conv.contact_name?.charAt(0).toUpperCase() || "?"}
                     </div>
                     <span
@@ -481,7 +481,7 @@ export default function ConversationInbox() {
       </div>
 
       {/* Right panel - chat */}
-      <div className="flex flex-1 flex-col bg-gray-50">
+      <div className="flex flex-1 flex-col" style={{ backgroundColor: "#e5ddd5", backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23d4cdc4\' fill-opacity=\'0.15\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}
         {!activeConv ? (
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
@@ -503,8 +503,8 @@ export default function ConversationInbox() {
         ) : (
           <>
             {/* Chat header */}
-            <div className="flex items-center gap-3 border-b border-gray-200 bg-white px-6 py-3 shadow-sm">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white shadow-sm">
+            <div className="flex items-center gap-3 border-b border-gray-200 bg-white px-4 py-2 shadow-sm">
+              <div className="avatar h-10 w-10 text-sm">
                 {activeConv.contact_name?.charAt(0).toUpperCase() || "?"}
               </div>
               <div className="flex-1 min-w-0">
@@ -592,45 +592,47 @@ export default function ConversationInbox() {
             <ErrorAlert message={error} />
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="flex-1 overflow-y-auto px-4 py-3 lg:px-12">
               {messages.length === 0 ? (
                 <div className="flex h-full items-center justify-center">
-                  <p className="text-sm text-gray-400">
-                    No messages yet. Send the first message.
-                  </p>
+                  <div className="rounded-xl bg-white/80 px-6 py-3 text-center shadow-sm">
+                    <p className="text-xs text-gray-500">
+                      No messages yet. Send the first message.
+                    </p>
+                  </div>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-1">
                   {messages.map((msg) => (
                     <div
                       key={msg.id}
                       className={`flex ${msg.sender_type === "agent" ? "justify-end" : "justify-start"}`}
                     >
                       <div
-                        className={`max-w-[75%] rounded-2xl px-4 py-2.5 shadow-sm ${
+                        className={`relative max-w-[65%] rounded-lg px-2.5 py-1.5 shadow-sm ${
                           msg.sender_type === "agent"
-                            ? "rounded-br-md bg-primary-500 text-white"
-                            : "rounded-bl-md bg-white text-gray-800 ring-1 ring-gray-100"
+                            ? "bg-[#d9fdd3] text-gray-900"
+                            : "bg-white text-gray-900"
                         }`}
                       >
                         {msg.message_type === "template" && (
                           <span
                             className={`mb-1 inline-block rounded-md px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${
                               msg.sender_type === "agent"
-                                ? "bg-white/20 text-white"
+                                ? "bg-primary-100/60 text-primary-700"
                                 : "bg-primary-50 text-primary-600"
                             }`}
                           >
                             Template: {msg.template_name || "unknown"}
                           </span>
                         )}
-                        <p className="text-sm whitespace-pre-wrap break-words">
+                        <p className="text-[14.2px] leading-[19px] whitespace-pre-wrap break-words">
                           {msg.content}
                         </p>
                         <div
-                          className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${
+                          className={`mt-0.5 flex items-center justify-end gap-1 text-[10px] ${
                             msg.sender_type === "agent"
-                              ? "text-white/70"
+                              ? "text-gray-500"
                               : "text-gray-400"
                           }`}
                         >
@@ -650,7 +652,7 @@ export default function ConversationInbox() {
                               />
                               <svg
                                 className={`h-3.5 w-3.5 ${
-                                  msg.is_read ? "text-blue-300" : "text-white/50"
+                                  msg.is_read ? "text-blue-500" : "text-gray-400"
                                 }`}
                                 viewBox="0 0 24 24"
                                 fill="currentColor"
@@ -668,81 +670,108 @@ export default function ConversationInbox() {
               )}
             </div>
 
-            {/* Input */}
-            <div className="border-t border-gray-200 bg-white px-4 py-3">
+            {/* Input - WhatsApp style */}
+            <div className="border-t border-gray-100 bg-[#f0f2f5] px-3 py-2">
               {activeConv.status === "closed" ? (
-                <p className="py-2 text-center text-sm text-gray-400">
-                  This conversation is closed.{" "}
-                  <button
-                    onClick={handleToggleStatus}
-                    className="font-medium text-primary-600 hover:underline"
-                  >
-                    Reopen it
-                  </button>{" "}
-                  to send messages.
-                </p>
+                <div className="flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 shadow-sm">
+                  <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                  </svg>
+                  <p className="text-sm text-gray-500">
+                    Conversation is closed.{" "}
+                    <button
+                      onClick={handleToggleStatus}
+                      className="font-medium text-primary-600 hover:underline"
+                    >
+                      Reopen
+                    </button>
+                  </p>
+                </div>
               ) : activeConv.whatsapp_account_id ? (
                 <>
                   {!withinWindow && (
-                    <div className="mb-3 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
-                      <p className="text-xs text-amber-700 font-medium">
-                        24-hour window expired. Only template messages can be sent.
+                    <div className="mb-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-1.5">
+                      <p className="text-[11px] text-amber-700 font-medium text-center">
+                        24h window expired - only templates can be sent
                       </p>
                     </div>
                   )}
+                  {selectedTemplate && (
+                    <div className="mb-2 flex items-center gap-2 rounded-xl bg-white px-3 py-2 shadow-sm">
+                      <svg className="h-4 w-4 text-primary-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                      </svg>
+                      <span className="flex-1 truncate text-xs font-medium text-primary-700">
+                        {selectedTemplate}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedTemplate(null);
+                          setShowTemplates(false);
+                          setTemplateParams([]);
+                        }}
+                        className="rounded-full p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                  {selectedTemplate && templateParams.length > 0 && (
+                    <div className="mb-2 flex flex-wrap gap-1.5 rounded-xl bg-white px-3 py-2 shadow-sm">
+                      {templateParams.map((val, i) => (
+                        <input
+                          key={i}
+                          type="text"
+                          value={val}
+                          onChange={(e) => {
+                            const next = [...templateParams];
+                            next[i] = e.target.value;
+                            setTemplateParams(next);
+                          }}
+                          placeholder={`{{${i + 1}}}`}
+                          className="w-24 rounded-lg border border-gray-200 px-2 py-1 text-xs outline-none focus:border-primary-400"
+                        />
+                      ))}
+                    </div>
+                  )}
                   <form onSubmit={handleSend} className="flex items-end gap-2">
+                    {/* Left buttons */}
+                    <div className="flex items-center gap-0.5 pb-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setShowTemplates(!showTemplates)}
+                        className="rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-200/70 hover:text-gray-700"
+                        title="Templates"
+                      >
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Input field */}
                     <div className="relative flex-1">
-                      {selectedTemplate && (
-                        <div className="mb-1.5 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1 rounded-lg bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">
-                              Template: {selectedTemplate}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedTemplate(null);
-                                  setShowTemplates(false);
-                                  setTemplateParams([]);
-                                }}
-                                className="ml-1 text-primary-400 hover:text-primary-600"
-                              >
-                                &times;
-                              </button>
-                            </span>
-                          </div>
-                          {templateParams.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                              {templateParams.map((val, i) => (
-                                <input
-                                  key={i}
-                                  type="text"
-                                  value={val}
-                                  onChange={(e) => {
-                                    const next = [...templateParams];
-                                    next[i] = e.target.value;
-                                    setTemplateParams(next);
-                                  }}
-                                  placeholder={`Var {{${i + 1}}}`}
-                                  className="w-28 rounded-lg border border-gray-200 px-2 py-1 text-xs outline-none focus:border-primary-400"
-                                />
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
                       <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         placeholder={
                           selectedTemplate
-                            ? "Add optional note to template..."
+                            ? "Add a note..."
                             : withinWindow
-                              ? "Type a message..."
-                              : "Only template messages allowed (24h window expired)"
+                              ? "Type a message"
+                              : "Only templates allowed"
                         }
                         disabled={!withinWindow && !selectedTemplate}
                         rows={1}
-                        className="input-field resize-none py-3 pr-12"
+                        className="w-full resize-none rounded-xl border-none bg-white px-4 py-2.5 text-sm text-gray-900 shadow-sm placeholder-gray-400 outline-none ring-1 ring-gray-200/60 transition-shadow focus:ring-2 focus:ring-primary-300/50"
+                        style={{ minHeight: "42px", maxHeight: "120px" }}
+                        onInput={(e) => {
+                          e.target.style.height = "auto";
+                          e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
@@ -750,22 +779,48 @@ export default function ConversationInbox() {
                           }
                         }}
                       />
-                  </div>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setShowTemplates(!showTemplates)}
-                      className="btn-secondary rounded-xl px-3 py-3"
-                      title="Send template"
-                    >
-                      <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
-                      </svg>
-                    </button>
+                    </div>
+
+                    {/* Right buttons */}
+                    <div className="flex items-center gap-0.5 pb-1.5">
+                      {input.trim() || selectedTemplate ? (
+                        <button
+                          type="submit"
+                          disabled={sending || (!withinWindow && !selectedTemplate)}
+                          className="flex h-9 w-9 items-center justify-center rounded-full bg-[#00a884] text-white shadow-sm transition-all hover:bg-[#06cf9c] disabled:opacity-50"
+                        >
+                          {sending ? (
+                            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                          ) : (
+                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M1.101 21.757L23.8 12.028 1.101 2.3l.011 7.912 13.623 1.816-13.623 1.817-.011 7.912z" />
+                            </svg>
+                          )}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-200/70 hover:text-gray-700"
+                          title="Attach"
+                        >
+                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Template picker dropdown */}
                     {showTemplates && (
-                      <div className="absolute bottom-full right-0 mb-2 w-64 overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-gray-200">
+                      <div className="absolute bottom-full left-0 mb-2 w-72 max-h-64 overflow-auto rounded-xl bg-white shadow-xl ring-1 ring-gray-200">
+                        <div className="sticky top-0 border-b border-gray-100 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                          Templates
+                        </div>
                         {availableTemplates.length === 0 && (
-                          <p className="px-4 py-3 text-xs text-gray-400">No templates found</p>
+                          <p className="px-4 py-4 text-center text-xs text-gray-400">No templates available</p>
                         )}
                         {availableTemplates.map((t) => {
                           let paramCount = 0;
@@ -786,18 +841,17 @@ export default function ConversationInbox() {
                                 setTemplateParams(Array(paramCount).fill(""));
                                 setShowTemplates(false);
                               }}
-                              className={`flex w-full items-center px-4 py-2.5 text-left text-sm transition-colors hover:bg-gray-50 ${
-                                selectedTemplate === t.name
-                                  ? "bg-primary-50 text-primary-700"
-                                  : "text-gray-700"
-                              }`}
+                              className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-gray-50"
                             >
+                              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary-50 text-xs font-bold text-primary-600">
+                                {t.name.charAt(0).toUpperCase()}
+                              </div>
                               <div className="min-w-0 flex-1">
-                                <div className="truncate font-medium">{t.name}</div>
-                                <div className="truncate text-xs text-gray-400">{t.category || "—"}</div>
+                                <p className="truncate text-sm font-medium text-gray-900">{t.name}</p>
+                                <p className="truncate text-xs text-gray-400">{t.category || "—"}</p>
                               </div>
                               {t.status && (
-                                <span className={`ml-2 flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                <span className={`flex-shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
                                   t.status === "APPROVED"
                                     ? "bg-green-100 text-green-700"
                                     : t.status === "PENDING"
@@ -812,38 +866,20 @@ export default function ConversationInbox() {
                         })}
                       </div>
                     )}
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={(!input.trim() && !selectedTemplate) || sending || (!withinWindow && !selectedTemplate)}
-                    className="btn-primary rounded-xl px-4 py-3"
-                  >
-                    {sending ? (
-                      <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                    ) : (
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                      </svg>
-                    )}
-                  </button>
-                </form>
-                </>
+                  </form>
               ) : (
-                <div className="py-3 text-center">
-                  <p className="text-sm text-gray-400 mb-2">
+                <div className="flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 shadow-sm">
+                  <svg className="h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                  </svg>
+                  <p className="text-sm text-gray-500">
                     Connect a WhatsApp account to send messages
                   </p>
                   <button
                     onClick={openWASelector}
-                    className="btn-primary text-xs"
+                    className="ml-1 rounded-lg bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-600 transition-colors hover:bg-primary-100"
                   >
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                    </svg>
-                    Connect WhatsApp
+                    Connect
                   </button>
                 </div>
               )}

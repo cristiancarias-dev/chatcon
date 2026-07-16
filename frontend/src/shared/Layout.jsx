@@ -214,9 +214,9 @@ export default function Layout({ children }) {
           })}
         </nav>
 
-        <div className="border-t border-white/10 p-3">
-          <div className="flex items-center gap-3 rounded-xl bg-primary-900/30 p-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white shadow-md">
+        <div className="border-t border-white/10 p-2">
+          <div className="flex items-center gap-2.5 rounded-xl bg-primary-900/30 p-2">
+            <div className="avatar h-9 w-9 text-xs">
               {user?.name?.charAt(0).toUpperCase() || "?"}
             </div>
             <div className="flex-1 min-w-0">

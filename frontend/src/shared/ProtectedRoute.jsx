@@ -1,18 +1,27 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-export default function ProtectedRoute({ children }) {
+export default function ProtectedRoute({ children, requireAdmin = false }) {
   const navigate = useNavigate();
+  const { user, loading, isAdmin } = useAuth();
+
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
     if (!token) {
       navigate("/login");
     }
-  }, [navigate]);
+  }, [navigate, token]);
 
-  const token = localStorage.getItem("token");
-  if (!token) return null;
+  useEffect(() => {
+    if (!loading && token && requireAdmin && !isAdmin) {
+      navigate("/dashboard");
+    }
+  }, [loading, token, requireAdmin, isAdmin, navigate]);
+
+  if (!token || loading) return null;
+  if (requireAdmin && !isAdmin) return null;
 
   return children;
 }

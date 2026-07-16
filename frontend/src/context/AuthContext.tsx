@@ -7,6 +7,7 @@ import type { UserWithRoles } from "../types";
 interface AuthContextType {
   user: UserWithRoles | null;
   loading: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterCompanyRequest) => Promise<void>;
   logout: () => void;
@@ -42,6 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
+  const isAdmin = !!user?.is_superuser || !!user?.roles?.some((r) => r.name === "admin");
+
   const login = useCallback(async (email: string, password: string) => {
     const data = await authService.login({ email, password });
     if (!data) throw new Error("Login failed");
@@ -68,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

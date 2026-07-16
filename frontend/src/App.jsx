@@ -22,9 +22,14 @@ import WhatsAppTemplateCreate from "./whatsapp-accounts/WhatsAppTemplateCreate";
 import WhatsAppTemplateEdit from "./whatsapp-accounts/WhatsAppTemplateEdit";
 import CompanySettings from "./company/CompanySettings";
 import Layout from "./shared/Layout";
+import ProtectedRoute from "./shared/ProtectedRoute";
 
-function ProtectedLayout({ children }) {
-  return <Layout>{children}</Layout>;
+function ProtectedLayout({ children, requireAdmin = false }) {
+  return (
+    <ProtectedRoute requireAdmin={requireAdmin}>
+      <Layout>{children}</Layout>
+    </ProtectedRoute>
+  );
 }
 
 export default function App() {
@@ -53,7 +58,7 @@ export default function App() {
         <Route
           path="/contacts/new"
           element={
-            <ProtectedLayout>
+            <ProtectedLayout requireAdmin>
               <ContactCreate />
             </ProtectedLayout>
           }
@@ -61,7 +66,7 @@ export default function App() {
         <Route
           path="/contacts/:id/edit"
           element={
-            <ProtectedLayout>
+            <ProtectedLayout requireAdmin>
               <ContactEdit />
             </ProtectedLayout>
           }
@@ -77,7 +82,7 @@ export default function App() {
         <Route
           path="/users"
           element={
-            <ProtectedLayout>
+            <ProtectedLayout requireAdmin>
               <UserList />
             </ProtectedLayout>
           }
@@ -85,7 +90,7 @@ export default function App() {
         <Route
           path="/users/new"
           element={
-            <ProtectedLayout>
+            <ProtectedLayout requireAdmin>
               <UserCreate />
             </ProtectedLayout>
           }
@@ -93,7 +98,7 @@ export default function App() {
         <Route
           path="/users/:id/edit"
           element={
-            <ProtectedLayout>
+            <ProtectedLayout requireAdmin>
               <UserEdit />
             </ProtectedLayout>
           }
@@ -101,7 +106,7 @@ export default function App() {
         <Route
           path="/whatsapp-accounts"
           element={
-            <ProtectedLayout>
+            <ProtectedLayout requireAdmin>
               <WhatsAppAccountList />
             </ProtectedLayout>
           }
@@ -109,7 +114,7 @@ export default function App() {
         <Route
           path="/whatsapp-accounts/new"
           element={
-            <ProtectedLayout>
+            <ProtectedLayout requireAdmin>
               <WhatsAppAccountCreate />
             </ProtectedLayout>
           }
@@ -117,7 +122,7 @@ export default function App() {
         <Route
           path="/whatsapp-accounts/:id/edit"
           element={
-            <ProtectedLayout>
+            <ProtectedLayout requireAdmin>
               <WhatsAppAccountEdit />
             </ProtectedLayout>
           }
@@ -125,7 +130,7 @@ export default function App() {
         <Route
           path="/whatsapp-accounts/:id/templates"
           element={
-            <ProtectedLayout>
+            <ProtectedLayout requireAdmin>
               <WhatsAppTemplateList />
             </ProtectedLayout>
           }
@@ -133,7 +138,7 @@ export default function App() {
         <Route
           path="/whatsapp-accounts/:id/templates/new"
           element={
-            <ProtectedLayout>
+            <ProtectedLayout requireAdmin>
               <WhatsAppTemplateCreate />
             </ProtectedLayout>
           }
@@ -141,7 +146,7 @@ export default function App() {
         <Route
           path="/whatsapp-accounts/:id/templates/:templateId/edit"
           element={
-            <ProtectedLayout>
+            <ProtectedLayout requireAdmin>
               <WhatsAppTemplateEdit />
             </ProtectedLayout>
           }
@@ -149,7 +154,7 @@ export default function App() {
         <Route
           path="/roles"
           element={
-            <ProtectedLayout>
+            <ProtectedLayout requireAdmin>
               <RoleList />
             </ProtectedLayout>
           }
@@ -157,7 +162,7 @@ export default function App() {
         <Route
           path="/roles/new"
           element={
-            <ProtectedLayout>
+            <ProtectedLayout requireAdmin>
               <RoleCreate />
             </ProtectedLayout>
           }
@@ -165,7 +170,7 @@ export default function App() {
         <Route
           path="/roles/:id/edit"
           element={
-            <ProtectedLayout>
+            <ProtectedLayout requireAdmin>
               <RoleEdit />
             </ProtectedLayout>
           }
@@ -173,7 +178,7 @@ export default function App() {
         <Route
           path="/settings/company"
           element={
-            <ProtectedLayout>
+            <ProtectedLayout requireAdmin>
               <CompanySettings />
             </ProtectedLayout>
           }
