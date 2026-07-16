@@ -29,3 +29,10 @@ class CompanyRead(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class RegisterCompanyRequest(BaseModel):
+    company_name: str
+    email: EmailStr
+    password: str
+    name: str

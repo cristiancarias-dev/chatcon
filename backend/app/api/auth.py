@@ -1,27 +1,26 @@
 from fastapi import APIRouter, Depends, status
-from pydantic import BaseModel, EmailStr
 
 from app.dependencies import get_auth_service
 from app.schemas.auth import LoginRequest
 from app.schemas.user import Token, UserCreate, UserWithRoles
+from app.schemas.company import RegisterCompanyRequest
 from app.services.auth_service import AuthService
 
 router = APIRouter()
 
 
-class RegisterCompanyRequest(BaseModel):
-    company_name: str
-    email: EmailStr
-    password: str
-    name: str
-
-
-@router.post("/register", response_model=UserWithRoles, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=UserWithRoles, status_code=status.HTTP_201_CREATED
+)
 def register(user_data: UserCreate, service: AuthService = Depends(get_auth_service)):
     return service.register(user_data)
 
 
-@router.post("/register-company", response_model=UserWithRoles, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register-company",
+    response_model=UserWithRoles,
+    status_code=status.HTTP_201_CREATED,
+)
 def register_company(
     data: RegisterCompanyRequest,
     service: AuthService = Depends(get_auth_service),
